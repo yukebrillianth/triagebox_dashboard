@@ -15,6 +15,7 @@ import type {
   ListStationsParams,
   ListVictimsParams,
   Node,
+  ReportSummary,
   Settings,
   Station,
   Victim,
@@ -162,3 +163,12 @@ export function useHealth(options?: QO<Health>) {
     ...options,
   });
 }
+
+export function useReport(options?: QO<ReportSummary>) {
+  return useQuery({
+    queryKey: queryKeys.report,
+    queryFn: () => api.getReportSummary(),
+    ...options,
+  });
+}
+

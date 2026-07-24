@@ -16,7 +16,7 @@ export function AppSidebar() {
   return (
     <aside
       data-testid="app-sidebar"
-      className="bg-card border-border flex h-full w-60 shrink-0 flex-col border-r"
+      className="bg-card border-border print:hidden flex h-full w-60 shrink-0 flex-col border-r"
     >
       <div className="border-border border-b px-4 py-3">
         <Link

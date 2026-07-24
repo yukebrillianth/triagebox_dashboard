@@ -134,11 +134,18 @@ export type AnalyticsSummary = {
   nodesTelemetry?: NodeTelemetry[];
 };
 
+export type ReportCounts = {
+  total?: number;
+  byPriority?: Partial<PriorityCounts>;
+};
+
 export type ReportSummary = {
   victims: Victim[];
-  counts: unknown;
+  counts: ReportCounts | PriorityCounts | unknown;
   triageHistoryCount?: number;
+  /** Contract name; live backend may use recentActivity */
   activityTimeline?: Activity[];
+  recentActivity?: Activity[];
 };
 
 export type VitalReading = {

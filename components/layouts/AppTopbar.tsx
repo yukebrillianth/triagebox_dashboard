@@ -67,7 +67,7 @@ export function AppTopbar() {
   return (
     <header
       data-testid="app-topbar"
-      className="bg-card border-border flex h-12 shrink-0 items-center gap-3 border-b px-4"
+      className="bg-card border-border print:hidden flex h-12 shrink-0 items-center gap-3 border-b px-4"
     >
       <div className="min-w-0 flex-1">
         <p className="text-foreground truncate text-sm font-semibold tracking-tight">
