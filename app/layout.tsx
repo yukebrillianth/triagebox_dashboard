@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'TriageBox',
-  description: 'Dashboard command center triase bencana — TriageBox',
+  description: 'Dashboard command center triase bencana - TriageBox',
 };
 
 export default function RootLayout({
