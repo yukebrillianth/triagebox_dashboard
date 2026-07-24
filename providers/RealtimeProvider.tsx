@@ -420,6 +420,26 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
 
+    const onBrowserOffline = () => {
+      if (cancelled) return;
+      setConnectionStatus('offline');
+      try {
+        socket.disconnect();
+      } catch {
+        /* ignore */
+      }
+    };
+    const onBrowserOnline = () => {
+      if (cancelled) return;
+      setConnectionStatus('connecting');
+      if (!socket.connected) socket.connect();
+    };
+    window.addEventListener('offline', onBrowserOffline);
+    window.addEventListener('online', onBrowserOnline);
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      setConnectionStatus('offline');
+    }
+
     setConnectionStatus('connecting');
     void (async () => {
       try {
@@ -428,6 +448,10 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         console.warn('[RealtimeProvider] bootstrap failed', e);
       }
       if (cancelled) return;
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        setConnectionStatus('offline');
+        return;
+      }
       if (!socket.connected) socket.connect();
     })();
 
@@ -438,6 +462,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       });
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
+      window.removeEventListener('offline', onBrowserOffline);
+      window.removeEventListener('online', onBrowserOnline);
     };
   }, [queryClient, bootstrap, markFlash, shouldPlayRedSound, clearDedupMaps]);
 
