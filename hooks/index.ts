@@ -13,3 +13,8 @@ export {
   useVictim,
   useVictims,
 } from './use-api';
+export { useFlash, useRealtime } from './use-realtime';
+export type {
+  ConnectionStatus,
+  RealtimeContextValue,
+} from './use-realtime';
