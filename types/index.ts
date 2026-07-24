@@ -117,12 +117,21 @@ export type HourlyTrendPoint = {
   count: number;
 };
 
+export type NodeTelemetry = {
+  id: string;
+  name: string;
+  rssi: number | null;
+  snr: number | null;
+  battery: number | null;
+  status: OnlineStatus | string;
+};
+
 export type AnalyticsSummary = {
   byPriority: PriorityCounts;
   hourlyTrend: HourlyTrendPoint[];
-  activeNodes?: unknown;
-  avgBatteryByNode?: unknown;
-  latestSignalByNode?: unknown;
+  activeNodes?: number;
+  avgBattery?: number | null;
+  nodesTelemetry?: NodeTelemetry[];
 };
 
 export type ReportSummary = {
