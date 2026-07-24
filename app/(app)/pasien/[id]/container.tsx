@@ -356,6 +356,73 @@ export function PasienDetailContainer() {
               </ul>
             )}
           </section>
+
+          <section
+            data-testid="vitals-history"
+            className="border-border bg-card rounded-md border p-3"
+          >
+            <h2 className="text-foreground mb-2 text-sm font-semibold tracking-tight">
+              Riwayat vital
+            </h2>
+            {vitalsHistory?.length ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-muted border-border border-b text-left text-[10px] font-medium tracking-wide uppercase">
+                      <th className="py-1.5 pr-2 font-medium">Waktu</th>
+                      <th className="py-1.5 pr-2 font-medium">HR</th>
+                      <th className="py-1.5 pr-2 font-medium">SpO2</th>
+                      <th className="py-1.5 pr-2 font-medium">RR</th>
+                      <th className="py-1.5 pr-2 font-medium">BP</th>
+                      <th className="py-1.5 pr-2 font-medium">Bat</th>
+                      <th className="py-1.5 font-medium">Prio</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vitalsHistory.slice(0, 20).map((r) => {
+                      const prio = asPriority(
+                        typeof r.priority === 'string' ? r.priority : null
+                      );
+                      return (
+                        <tr
+                          key={r.id}
+                          className="border-border/60 border-b last:border-0"
+                        >
+                          <td className="text-muted py-1.5 pr-2 font-mono tabular-nums whitespace-nowrap">
+                            {formatRelativeWib(r.deviceTs ?? r.createdAt, now)}
+                          </td>
+                          <td className="text-foreground py-1.5 pr-2 font-mono tabular-nums">
+                            {r.hr ?? '—'}
+                          </td>
+                          <td className="text-foreground py-1.5 pr-2 font-mono tabular-nums">
+                            {r.spo2 ?? '—'}
+                          </td>
+                          <td className="text-foreground py-1.5 pr-2 font-mono tabular-nums">
+                            {r.rr ?? '—'}
+                          </td>
+                          <td className="text-foreground py-1.5 pr-2 font-mono tabular-nums whitespace-nowrap">
+                            {formatBp(r.bpSys, r.bpDia)}
+                          </td>
+                          <td className="text-foreground py-1.5 pr-2 font-mono tabular-nums">
+                            {r.battery ?? '—'}
+                          </td>
+                          <td className="py-1.5">
+                            {prio ? (
+                              <PriorityBadge priority={prio} />
+                            ) : (
+                              <span className="text-muted">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-muted text-xs">Belum ada riwayat vital</p>
+            )}
+          </section>
         </div>
 
         {/* Right: form + history */}
