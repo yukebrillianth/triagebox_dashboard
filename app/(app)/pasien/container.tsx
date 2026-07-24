@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import {
@@ -322,7 +323,22 @@ export function PasienContainer() {
       {emptyAll ? (
         <EmptyState
           title="Belum ada korban"
-          description="Menunggu data node lapangan / simulator."
+          description={
+            (nodes?.length ?? 0) === 0
+              ? 'Belum ada node terdaftar. Daftarkan perangkat terlebih dahulu.'
+              : 'Menunggu data node lapangan / simulator.'
+          }
+          action={
+            (nodes?.length ?? 0) === 0 ? (
+              <Link
+                href="/perangkat"
+                data-testid="cta-perangkat"
+                className="bg-accent text-background inline-flex rounded-sm px-3 py-1.5 text-xs font-semibold"
+              >
+                Ke Perangkat
+              </Link>
+            ) : undefined
+          }
         />
       ) : filtered.length === 0 ? (
         <EmptyState

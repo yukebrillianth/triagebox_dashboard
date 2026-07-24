@@ -7,6 +7,7 @@ export {
   useKpis,
   useNode,
   useNodes,
+  useReport,
   useSettings,
   useStation,
   useStations,
