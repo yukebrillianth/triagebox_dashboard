@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 
+import { RedSoundListener } from '@/components/alerts';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { RealtimeProvider } from '@/providers/RealtimeProvider';
 import { ToastProvider } from '@/providers/ToastProvider';
@@ -33,7 +34,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
         <QueryProvider>
-          <RealtimeProvider>{children}</RealtimeProvider>
+          <RealtimeProvider>
+            <RedSoundListener />
+            {children}
+          </RealtimeProvider>
         </QueryProvider>
         <ToastProvider />
       </body>

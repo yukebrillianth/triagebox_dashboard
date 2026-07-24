@@ -13,6 +13,8 @@ import {
 
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 
+import toast from 'react-hot-toast';
+
 import { queryKeys } from '@/hooks/use-api';
 import { api } from '@/lib/api';
 import { getSocket } from '@/lib/socket';
@@ -342,6 +344,15 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         { queryKey: [...queryKeys.alerts.all, 'list'] },
         (old) => prependAlert(old, alert)
       );
+
+      const msg = alert.message || alert.type || 'Alert baru';
+      if (alert.severity === 'CRITICAL') {
+        toast.error(msg, { duration: Infinity, id: alert.id });
+      } else if (alert.severity === 'WARNING') {
+        toast(msg, { duration: 4000, id: alert.id });
+      } else {
+        toast(msg, { duration: 4000, id: alert.id });
+      }
     };
 
     const onActivityCreated = (item: WsActivityCreated) => {
