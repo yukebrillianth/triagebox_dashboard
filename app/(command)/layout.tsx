@@ -1,3 +1,5 @@
+import { OfflineBanner } from '@/components/banners';
+
 export default function CommandLayout({
   children,
 }: {
@@ -6,9 +8,10 @@ export default function CommandLayout({
   return (
     <div
       data-testid="command-layout"
-      className="bg-background min-h-screen"
+      className="bg-background flex min-h-screen flex-col"
     >
-      {children}
+      <OfflineBanner />
+      <div className="min-h-0 flex-1">{children}</div>
     </div>
   );
 }

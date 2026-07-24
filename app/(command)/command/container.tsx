@@ -315,9 +315,11 @@ export function CommandContainer() {
           </div>
           <ul className="min-h-0 flex-1 overflow-y-auto">
             {nodesLoading && !nodes ? (
-              <li className="text-muted px-3 py-6 text-center text-xs">
-                Memuat node…
-              </li>
+              Array.from({ length: 4 }).map((_, i) => (
+                <li key={i} className="px-3 py-2">
+                  <div className="border-border bg-card h-8 animate-pulse rounded-md border" />
+                </li>
+              ))
             ) : sortedNodes.length === 0 ? (
               <li className="p-3">
                 <EmptyState
@@ -348,9 +350,11 @@ export function CommandContainer() {
           </div>
           <ul className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-2">
             {victimsLoading && !victims ? (
-              <li className="text-muted px-3 py-6 text-center text-xs">
-                Memuat korban…
-              </li>
+              Array.from({ length: 4 }).map((_, i) => (
+                <li key={i}>
+                  <div className="border-border bg-card h-14 animate-pulse rounded-md border" />
+                </li>
+              ))
             ) : sortedVictims.length === 0 ? (
               <li>
                 <EmptyState
@@ -382,9 +386,11 @@ export function CommandContainer() {
         </div>
         <ul className="min-h-0 flex-1 overflow-y-auto">
           {activityLoading && !activity ? (
-            <li className="text-muted px-3 py-4 text-center text-xs">
-              Memuat aktivitas…
-            </li>
+            Array.from({ length: 3 }).map((_, i) => (
+              <li key={i} className="px-3 py-1">
+                <div className="border-border bg-card h-6 animate-pulse rounded-md border" />
+              </li>
+            ))
           ) : !activity || activity.length === 0 ? (
             <li className="text-muted px-3 py-4 text-center text-xs">
               Belum ada aktivitas

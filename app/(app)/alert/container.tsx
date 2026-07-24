@@ -156,7 +156,14 @@ export function AlertContainer() {
       </div>
 
       {isLoading ? (
-        <p className="text-muted text-sm">Memuat alert…</p>
+        <div className="space-y-2" aria-busy="true">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="border-border bg-card h-10 animate-pulse rounded-md border"
+            />
+          ))}
+        </div>
       ) : null}
 
       {isError ? (
