@@ -46,13 +46,13 @@ export function ConnectionBadge({ status, className }: ConnectionBadgeProps) {
       data-testid="connection-badge"
       data-status={status}
       className={cn(
-        'inline-flex items-center gap-1.5 text-xs font-medium',
+        'inline-flex items-center gap-2 text-xs font-medium',
         connectionClass(status),
         className
       )}
     >
       <span
-        className={cn('inline-block size-1.5 rounded-full', dotClass(status))}
+        className={cn('inline-block size-2.5 shrink-0', dotClass(status))}
         aria-hidden
       />
       {connectionLabel(status)}

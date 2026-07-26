@@ -1,24 +1,60 @@
 @import 'tailwindcss';
 
+/* Class-based dark mode so theme toggle controls dark: utilities. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #0b1220;
-  --foreground: #e5e7eb;
-  --card: #111827;
-  --border: #1e293b;
-  --accent: #14b8a6;
-  --triage-red: #ef4444;
-  --triage-yellow: #eab308;
-  --triage-green: #22c55e;
-  --triage-black: #1f2937;
-  --muted: #94a3b8;
+  color-scheme: light;
+  --background: #f1f4f2;
+  --foreground: #111714;
+  --card: #ffffff;
+  --surface-muted: #e4eae6;
+  --control-hover: #d8e1dc;
+  --border: #89968f;
+  --accent: #006b60;
+  --accent-foreground: #ffffff;
+  --triage-red: #b42318;
+  --triage-yellow: #725800;
+  --triage-green: #11743c;
+  --triage-black: #171c19;
+  --muted: #4b5b52;
+  --focus: #006b60;
+  --backdrop: rgb(10 15 12 / 72%);
+  --shell-header-height: 4.5rem;
+  --shell-sidebar-width: 17rem;
+  --radius-control: 0.125rem;
+  --space-page: 1.5rem;
+  --transition-fast: 150ms ease;
+}
+
+html.dark {
+  color-scheme: dark;
+  --background: #0b100d;
+  --foreground: #f1f5f2;
+  --card: #141b17;
+  --surface-muted: #1c2620;
+  --control-hover: #27342d;
+  --border: #526158;
+  --accent: #58d6c2;
+  --accent-foreground: #07110e;
+  --triage-red: #ff766d;
+  --triage-yellow: #f2ca52;
+  --triage-green: #62dc91;
+  --triage-black: #dce3df;
+  --muted: #aebcb4;
+  --focus: #69e4cf;
+  --backdrop: rgb(0 0 0 / 78%);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
+  --color-surface-muted: var(--surface-muted);
+  --color-control-hover: var(--control-hover);
   --color-border: var(--border);
   --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --color-triage-red: var(--triage-red);
   --color-triage-yellow: var(--triage-yellow);
   --color-triage-green: var(--triage-green);
@@ -28,17 +64,178 @@
   --font-mono: var(--font-geist-mono);
 }
 
-html.dark,
 html {
-  color-scheme: dark;
+  min-width: 20rem;
+  min-height: 100%;
+  background: var(--background);
+  overflow-x: hidden;
 }
 
 body {
+  min-height: 100%;
+  margin: 0;
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  overflow-x: hidden;
+  transition:
+    background-color var(--transition-fast), color var(--transition-fast);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-foreground);
 }
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  html,
+  html.dark,
+  body {
+    width: auto !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    color-scheme: light !important;
+    --background: #ffffff !important;
+    --foreground: #000000 !important;
+    --card: #ffffff !important;
+    --muted: #333333 !important;
+    --border: #000000 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+  }
+
+  [data-testid='app-shell'],
+  [data-testid='app-shell'] > div,
+  [data-testid='app-shell'] main,
+  [data-testid^='page-'] {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  [data-testid='app-shell'] main {
+    padding: 0 !important;
+  }
+
+  [data-testid='app-sidebar'],
+  [data-testid='app-topbar'],
+  [data-testid='sidebar-overlay'],
+  [data-testid='banner-offline'] {
+    display: none !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .fixed,
+  .sticky {
+    position: static !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse;
+    page-break-inside: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tbody {
+    display: table-row-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  tr,
+  img,
+  svg {
+    break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  p,
+  td,
+  th {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Official report: force light paper, black text */
+  [data-testid='page-report'],
+  [data-testid='page-report'] * {
+    background: transparent !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  [data-testid='page-report'] {
+    background: #ffffff !important;
+  }
+
+  [data-testid='page-report'] thead th {
+    background: #f0f0f0 !important;
+    color: #000000 !important;
+  }
 }

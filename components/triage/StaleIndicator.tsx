@@ -30,11 +30,11 @@ export function StaleIndicator({
     <span
       data-testid="stale-indicator"
       className={cn(
-        'bg-triage-yellow/15 text-triage-yellow inline-flex items-center rounded-sm px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase',
+        'text-triage-yellow border-triage-yellow inline-flex items-center border-l-2 pl-2 text-sm font-semibold',
         className
       )}
     >
-      stale
+      Data lama
     </span>
   );
 }

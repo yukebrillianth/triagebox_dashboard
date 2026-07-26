@@ -8,6 +8,15 @@ import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 
 import { EmptyState, formatRelativeWib } from '@/components/triage';
+import {
+  Button,
+  Dialog,
+  DialogFooter,
+  Field,
+  Input,
+  Select,
+  Textarea,
+} from '@/components/ui';
 import { queryKeys, useNodes, useStations } from '@/hooks/use-api';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/cn';
@@ -44,15 +53,15 @@ function StatusPill({ status }: { status: OnlineStatus | string }) {
     <span
       data-status={status}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase',
+        'inline-flex items-center gap-2 border-l-2 pl-2 text-sm font-semibold',
         online
-          ? 'border-triage-green/40 bg-triage-green/15 text-triage-green'
-          : 'border-border bg-card text-muted'
+          ? 'border-triage-green text-triage-green'
+          : 'border-border text-muted'
       )}
     >
       <span
         className={cn(
-          'size-1.5 rounded-full',
+          'size-2.5 shrink-0',
           online ? 'bg-triage-green' : 'bg-muted'
         )}
         aria-hidden
@@ -62,21 +71,10 @@ function StatusPill({ status }: { status: OnlineStatus | string }) {
   );
 }
 
-function fieldClass(err?: boolean) {
-  return cn(
-    'border-border bg-background text-foreground placeholder:text-muted focus:border-accent h-9 w-full rounded-sm border px-2.5 text-sm outline-none',
-    err && 'border-triage-red'
-  );
-}
-
-function labelClass() {
-  return 'text-muted mb-1 block text-[11px] font-medium tracking-wide uppercase';
-}
-
 function mqttLabel(s: Station): string {
   const host = s.mqttBrokerHost?.trim();
-  if (!host) return '—';
-  const port = s.mqttBrokerPort != null ? String(s.mqttBrokerPort) : '—';
+  if (!host) return '-';
+  const port = s.mqttBrokerPort != null ? String(s.mqttBrokerPort) : '-';
   return `${host}:${port}`;
 }
 
@@ -198,207 +196,146 @@ function StationFormDialog({
   const isSubmitting = form.formState.isSubmitting;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      role="dialog"
-      aria-modal="true"
+    <Dialog
+      open
+      onClose={onClose}
+      title={isCreate ? 'Tambah Station' : 'Edit Station'}
+      description={!isCreate && station ? station.id : undefined}
       data-testid="dialog-station"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
     >
-      <div className="border-border bg-card max-h-[90vh] w-full max-w-md overflow-y-auto rounded-md border p-4 shadow-xl">
-        <div className="mb-3 flex items-start justify-between gap-2">
-          <div>
-            <h2 className="text-foreground text-sm font-semibold tracking-tight">
-              {isCreate ? 'Tambah Station' : 'Edit Station'}
-            </h2>
-            {!isCreate && station ? (
-              <p className="text-muted mt-0.5 font-mono text-[11px] tabular-nums">
-                {station.id}
-              </p>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-muted hover:text-foreground text-xs"
+      <form
+        noValidate
+        className="space-y-3"
+        onSubmit={
+          isCreate
+            ? createForm.handleSubmit(onCreate)
+            : editForm.handleSubmit(onEdit)
+        }
+      >
+        {isCreate ? (
+          <Field
+            label="ID"
+            htmlFor="station-id"
+            required
+            error={errors.id?.message}
           >
-            Tutup
-          </button>
+            <Input
+              id="station-id"
+              data-testid="input-station-id"
+              maxLength={64}
+              placeholder="st-03"
+              {...createForm.register('id')}
+            />
+          </Field>
+        ) : null}
+
+        <Field
+          label="Nama"
+          htmlFor="station-name"
+          required
+          error={errors.name?.message}
+        >
+          <Input
+            id="station-name"
+            data-testid="input-station-name"
+            maxLength={128}
+            {...(isCreate
+              ? createForm.register('name')
+              : editForm.register('name'))}
+          />
+        </Field>
+
+        <Field
+          label="IP Address"
+          htmlFor="station-ip"
+          error={errors.ipAddress?.message}
+        >
+          <Input
+            id="station-ip"
+            data-testid="input-station-ip"
+            maxLength={64}
+            placeholder="192.168.10.5"
+            {...(isCreate
+              ? createForm.register('ipAddress')
+              : editForm.register('ipAddress'))}
+          />
+        </Field>
+
+        <div className="grid grid-cols-3 gap-3">
+          <Field
+            label="MQTT Host"
+            htmlFor="station-mqtt-host"
+            error={errors.mqttBrokerHost?.message}
+            className="col-span-2"
+          >
+            <Input
+              id="station-mqtt-host"
+              data-testid="input-station-mqtt-host"
+              maxLength={255}
+              placeholder="192.168.10.1"
+              {...(isCreate
+                ? createForm.register('mqttBrokerHost')
+                : editForm.register('mqttBrokerHost'))}
+            />
+          </Field>
+          <Field
+            label="Port"
+            htmlFor="station-mqtt-port"
+            error={errors.mqttBrokerPort?.message}
+          >
+            <Input
+              id="station-mqtt-port"
+              data-testid="input-station-mqtt-port"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={65535}
+              className="font-mono tabular-nums"
+              placeholder="1883"
+              {...(isCreate
+                ? createForm.register('mqttBrokerPort')
+                : editForm.register('mqttBrokerPort'))}
+            />
+          </Field>
         </div>
 
-        <form
-          noValidate
-          className="space-y-2.5"
-          onSubmit={
-            isCreate
-              ? createForm.handleSubmit(onCreate)
-              : editForm.handleSubmit(onEdit)
-          }
-        >
-          {isCreate ? (
-            <div>
-              <label htmlFor="station-id" className={labelClass()}>
-                ID <span className="text-triage-red">*</span>
-              </label>
-              <input
-                id="station-id"
-                data-testid="input-station-id"
-                className={fieldClass(!!errors.id)}
-                maxLength={64}
-                placeholder="st-03"
-                {...createForm.register('id')}
-              />
-              {errors.id?.message ? (
-                <p className="text-triage-red mt-1 text-[11px]">
-                  {errors.id.message}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
+        <Field label="Firmware" htmlFor="station-firmware">
+          <Input
+            id="station-firmware"
+            data-testid="input-station-firmware"
+            maxLength={64}
+            {...(isCreate
+              ? createForm.register('firmware')
+              : editForm.register('firmware'))}
+          />
+        </Field>
 
-          <div>
-            <label htmlFor="station-name" className={labelClass()}>
-              Nama <span className="text-triage-red">*</span>
-            </label>
-            <input
-              id="station-name"
-              data-testid="input-station-name"
-              className={fieldClass(!!errors.name)}
-              maxLength={128}
-              {...(isCreate
-                ? createForm.register('name')
-                : editForm.register('name'))}
-            />
-            {errors.name?.message ? (
-              <p className="text-triage-red mt-1 text-[11px]">
-                {errors.name.message}
-              </p>
-            ) : null}
-          </div>
+        <Field label="Catatan" htmlFor="station-notes">
+          <Textarea
+            id="station-notes"
+            data-testid="input-station-notes"
+            rows={2}
+            maxLength={1024}
+            {...(isCreate
+              ? createForm.register('notes')
+              : editForm.register('notes'))}
+          />
+        </Field>
 
-          <div>
-            <label htmlFor="station-ip" className={labelClass()}>
-              IP Address
-            </label>
-            <input
-              id="station-ip"
-              data-testid="input-station-ip"
-              className={fieldClass(!!errors.ipAddress)}
-              maxLength={64}
-              placeholder="192.168.10.5"
-              {...(isCreate
-                ? createForm.register('ipAddress')
-                : editForm.register('ipAddress'))}
-            />
-            {errors.ipAddress?.message ? (
-              <p className="text-triage-red mt-1 text-[11px]">
-                {errors.ipAddress.message}
-              </p>
-            ) : null}
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <div className="col-span-2">
-              <label htmlFor="station-mqtt-host" className={labelClass()}>
-                MQTT Host
-              </label>
-              <input
-                id="station-mqtt-host"
-                data-testid="input-station-mqtt-host"
-                className={fieldClass(!!errors.mqttBrokerHost)}
-                maxLength={255}
-                placeholder="192.168.10.1"
-                {...(isCreate
-                  ? createForm.register('mqttBrokerHost')
-                  : editForm.register('mqttBrokerHost'))}
-              />
-              {errors.mqttBrokerHost?.message ? (
-                <p className="text-triage-red mt-1 text-[11px]">
-                  {errors.mqttBrokerHost.message}
-                </p>
-              ) : null}
-            </div>
-            <div>
-              <label htmlFor="station-mqtt-port" className={labelClass()}>
-                Port
-              </label>
-              <input
-                id="station-mqtt-port"
-                data-testid="input-station-mqtt-port"
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={65535}
-                className={cn(fieldClass(!!errors.mqttBrokerPort), 'font-mono')}
-                placeholder="1883"
-                {...(isCreate
-                  ? createForm.register('mqttBrokerPort')
-                  : editForm.register('mqttBrokerPort'))}
-              />
-              {errors.mqttBrokerPort?.message ? (
-                <p className="text-triage-red mt-1 text-[11px]">
-                  {errors.mqttBrokerPort.message}
-                </p>
-              ) : null}
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="station-firmware" className={labelClass()}>
-              Firmware
-            </label>
-            <input
-              id="station-firmware"
-              data-testid="input-station-firmware"
-              className={fieldClass(!!errors.firmware)}
-              maxLength={64}
-              {...(isCreate
-                ? createForm.register('firmware')
-                : editForm.register('firmware'))}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="station-notes" className={labelClass()}>
-              Catatan
-            </label>
-            <textarea
-              id="station-notes"
-              data-testid="input-station-notes"
-              rows={2}
-              maxLength={1024}
-              className={cn(
-                fieldClass(!!errors.notes),
-                'h-auto resize-y py-2'
-              )}
-              {...(isCreate
-                ? createForm.register('notes')
-                : editForm.register('notes'))}
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="border-border bg-background text-foreground rounded-sm border px-3 py-1.5 text-xs"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              data-testid="btn-save-station"
-              disabled={isSubmitting}
-              className="bg-accent text-background hover:bg-accent/90 disabled:bg-muted h-9 rounded-sm px-4 text-sm font-semibold transition-colors disabled:opacity-50"
-            >
-              {isSubmitting ? 'Menyimpan…' : 'Simpan'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <DialogFooter>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Batal
+          </Button>
+          <Button
+            type="submit"
+            data-testid="btn-save-station"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Menyimpan…' : 'Simpan'}
+          </Button>
+        </DialogFooter>
+      </form>
+    </Dialog>
   );
 }
 
@@ -531,152 +468,107 @@ function NodeFormDialog({
         })();
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      role="dialog"
-      aria-modal="true"
+    <Dialog
+      open
+      onClose={onClose}
+      title={isCreate ? 'Tambah Node' : 'Edit Node'}
+      description={!isCreate && node ? node.id : undefined}
       data-testid="dialog-node"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
     >
-      <div className="border-border bg-card max-h-[90vh] w-full max-w-md overflow-y-auto rounded-md border p-4 shadow-xl">
-        <div className="mb-3 flex items-start justify-between gap-2">
-          <div>
-            <h2 className="text-foreground text-sm font-semibold tracking-tight">
-              {isCreate ? 'Tambah Node' : 'Edit Node'}
-            </h2>
-            {!isCreate && node ? (
-              <p className="text-muted mt-0.5 font-mono text-[11px] tabular-nums">
-                {node.id}
-              </p>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-muted hover:text-foreground text-xs"
+      <form
+        noValidate
+        className="space-y-3"
+        onSubmit={
+          isCreate
+            ? createForm.handleSubmit(onCreate)
+            : editForm.handleSubmit(onEdit)
+        }
+      >
+        {isCreate ? (
+          <Field
+            label="ID"
+            htmlFor="node-id"
+            required
+            error={errors.id?.message}
           >
-            Tutup
-          </button>
-        </div>
+            <Input
+              id="node-id"
+              data-testid="input-node-id"
+              maxLength={64}
+              placeholder="node-01"
+              {...createForm.register('id')}
+            />
+          </Field>
+        ) : null}
 
-        <form
-          noValidate
-          className="space-y-2.5"
-          onSubmit={
-            isCreate
-              ? createForm.handleSubmit(onCreate)
-              : editForm.handleSubmit(onEdit)
+        <Field
+          label="Station"
+          htmlFor="node-station"
+          required
+          error={errors.stationId?.message}
+          hint={
+            stationOptions.length === 0
+              ? 'Belum ada station aktif. Buat station dulu.'
+              : undefined
           }
         >
-          {isCreate ? (
-            <div>
-              <label htmlFor="node-id" className={labelClass()}>
-                ID <span className="text-triage-red">*</span>
-              </label>
-              <input
-                id="node-id"
-                data-testid="input-node-id"
-                className={fieldClass(!!errors.id)}
-                maxLength={64}
-                placeholder="node-01"
-                {...createForm.register('id')}
-              />
-              {errors.id?.message ? (
-                <p className="text-triage-red mt-1 text-[11px]">
-                  {errors.id.message}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
+          <Select
+            id="node-station"
+            data-testid="select-node-station"
+            {...(isCreate
+              ? createForm.register('stationId')
+              : editForm.register('stationId'))}
+          >
+            <option value="">Pilih station…</option>
+            {stationOptions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name} ({s.id})
+              </option>
+            ))}
+          </Select>
+        </Field>
 
-          <div>
-            <label htmlFor="node-station" className={labelClass()}>
-              Station <span className="text-triage-red">*</span>
-            </label>
-            <select
-              id="node-station"
-              data-testid="select-node-station"
-              className={fieldClass(!!errors.stationId)}
-              {...(isCreate
-                ? createForm.register('stationId')
-                : editForm.register('stationId'))}
-            >
-              <option value="">Pilih station…</option>
-              {stationOptions.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.id})
-                </option>
-              ))}
-            </select>
-            {errors.stationId?.message ? (
-              <p className="text-triage-red mt-1 text-[11px]">
-                {errors.stationId.message}
-              </p>
-            ) : null}
-            {stationOptions.length === 0 ? (
-              <p className="text-triage-yellow mt-1 text-[11px]">
-                Belum ada station aktif. Buat station dulu.
-              </p>
-            ) : null}
-          </div>
+        <Field
+          label="Nama"
+          htmlFor="node-name"
+          required
+          error={errors.name?.message}
+        >
+          <Input
+            id="node-name"
+            data-testid="input-node-name"
+            maxLength={128}
+            {...(isCreate
+              ? createForm.register('name')
+              : editForm.register('name'))}
+          />
+        </Field>
 
-          <div>
-            <label htmlFor="node-name" className={labelClass()}>
-              Nama <span className="text-triage-red">*</span>
-            </label>
-            <input
-              id="node-name"
-              data-testid="input-node-name"
-              className={fieldClass(!!errors.name)}
-              maxLength={128}
-              {...(isCreate
-                ? createForm.register('name')
-                : editForm.register('name'))}
-            />
-            {errors.name?.message ? (
-              <p className="text-triage-red mt-1 text-[11px]">
-                {errors.name.message}
-              </p>
-            ) : null}
-          </div>
+        <Field label="Firmware" htmlFor="node-firmware">
+          <Input
+            id="node-firmware"
+            data-testid="input-node-firmware"
+            maxLength={64}
+            {...(isCreate
+              ? createForm.register('firmware')
+              : editForm.register('firmware'))}
+          />
+        </Field>
 
-          <div>
-            <label htmlFor="node-firmware" className={labelClass()}>
-              Firmware
-            </label>
-            <input
-              id="node-firmware"
-              data-testid="input-node-firmware"
-              className={fieldClass(!!errors.firmware)}
-              maxLength={64}
-              {...(isCreate
-                ? createForm.register('firmware')
-                : editForm.register('firmware'))}
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="border-border bg-background text-foreground rounded-sm border px-3 py-1.5 text-xs"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              data-testid="btn-save-node"
-              disabled={isSubmitting || (isCreate && stationOptions.length === 0)}
-              className="bg-accent text-background hover:bg-accent/90 disabled:bg-muted h-9 rounded-sm px-4 text-sm font-semibold transition-colors disabled:opacity-50"
-            >
-              {isSubmitting ? 'Menyimpan…' : 'Simpan'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <DialogFooter>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Batal
+          </Button>
+          <Button
+            type="submit"
+            data-testid="btn-save-node"
+            disabled={isSubmitting || (isCreate && stationOptions.length === 0)}
+          >
+            {isSubmitting ? 'Menyimpan…' : 'Simpan'}
+          </Button>
+        </DialogFooter>
+      </form>
+    </Dialog>
   );
 }
 
@@ -775,42 +667,42 @@ export function PerangkatContainer() {
   const nodeRows = nodes ?? [];
 
   return (
-    <div data-testid="page-perangkat" className="space-y-3">
-      <header className="flex flex-wrap items-end justify-between gap-2">
+    <div data-testid="page-perangkat" className="space-y-6 md:space-y-8">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-foreground text-xl font-semibold tracking-tight">
+          <h1 className="text-foreground text-2xl font-semibold tracking-tight">
             Perangkat
           </h1>
-          <p className="text-muted mt-1 text-sm">
+          <p className="text-muted mt-1 text-base">
             Station &amp; node lapangan · live status
           </p>
         </div>
-        <label className="text-muted flex cursor-pointer items-center gap-2 text-xs">
+        <label className="text-muted flex min-h-11 cursor-pointer items-center gap-2 text-sm">
           <input
             type="checkbox"
             data-testid="toggle-include-inactive"
             checked={includeInactive}
             onChange={(e) => setIncludeInactive(e.target.checked)}
-            className="accent-accent size-3.5"
+            className="accent-accent size-4"
           />
           Tampilkan nonaktif
         </label>
       </header>
 
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="border-border bg-card flex flex-wrap items-center gap-2 border p-4">
         <button
           type="button"
           data-testid="tab-station"
           data-active={tab === 'station' ? 'true' : 'false'}
           onClick={() => setTab('station')}
           className={cn(
-            'border-border text-muted rounded-md border px-3 py-1.5 text-xs font-semibold tracking-wide uppercase transition-colors',
+            'border-border text-muted hover:bg-control-hover hover:text-foreground inline-flex min-h-11 items-center border px-4 text-sm font-semibold transition-colors',
             tab === 'station' &&
-              'border-accent/40 bg-accent/10 text-accent'
+              'border-accent bg-surface-muted text-accent'
           )}
         >
           Station
-          <span className="ml-1.5 font-mono tabular-nums opacity-80">
+          <span className="ml-2 font-mono tabular-nums opacity-80">
             {stationRows.length}
           </span>
         </button>
@@ -820,35 +712,35 @@ export function PerangkatContainer() {
           data-active={tab === 'node' ? 'true' : 'false'}
           onClick={() => setTab('node')}
           className={cn(
-            'border-border text-muted rounded-md border px-3 py-1.5 text-xs font-semibold tracking-wide uppercase transition-colors',
-            tab === 'node' && 'border-accent/40 bg-accent/10 text-accent'
+            'border-border text-muted hover:bg-control-hover hover:text-foreground inline-flex min-h-11 items-center border px-4 text-sm font-semibold transition-colors',
+            tab === 'node' && 'border-accent bg-surface-muted text-accent'
           )}
         >
           Node
-          <span className="ml-1.5 font-mono tabular-nums opacity-80">
+          <span className="ml-2 font-mono tabular-nums opacity-80">
             {nodeRows.length}
           </span>
         </button>
       </div>
 
       {tab === 'station' ? (
-        <section className="space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-muted text-xs">
+        <section className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-muted text-sm">
               Gateway MQTT · IP &amp; broker config
             </p>
             <button
               type="button"
               data-testid="btn-create-station"
               onClick={() => setStationDialog({ mode: 'create' })}
-              className="bg-accent text-background hover:bg-accent/90 rounded-sm px-3 py-1.5 text-xs font-semibold transition-colors"
+              className="bg-accent text-accent-foreground hover:opacity-90 inline-flex min-h-11 items-center px-4 text-sm font-semibold transition-colors"
             >
               + Station
             </button>
           </div>
 
           {stationsLoading && !stations ? (
-            <div className="border-border bg-card h-40 animate-pulse rounded-md border" />
+            <div className="border-border bg-card h-40 animate-pulse border" />
           ) : stationsError && !stations ? (
             <EmptyState
               title="Gagal memuat station"
@@ -862,27 +754,27 @@ export function PerangkatContainer() {
                 <button
                   type="button"
                   onClick={() => setStationDialog({ mode: 'create' })}
-                  className="bg-accent text-background rounded-sm px-3 py-1.5 text-xs font-semibold"
+                  className="bg-accent text-accent-foreground hover:opacity-90 inline-flex min-h-11 items-center px-4 text-sm font-semibold"
                 >
                   Buat station
                 </button>
               }
             />
           ) : (
-            <div className="border-border overflow-x-auto rounded-md border">
+            <div className="border-border overflow-x-auto border">
               <table className="w-full min-w-[960px] border-collapse text-left text-sm">
                 <thead className="bg-card sticky top-0 z-10">
-                  <tr className="border-border text-muted border-b text-[10px] font-semibold tracking-wider uppercase">
-                    <th className="px-2 py-2">ID</th>
-                    <th className="px-2 py-2">Nama</th>
-                    <th className="px-2 py-2">Status</th>
-                    <th className="px-2 py-2">IP</th>
-                    <th className="px-2 py-2">MQTT</th>
-                    <th className="px-2 py-2">Firmware</th>
-                    <th className="px-2 py-2">Last Seen</th>
-                    <th className="px-2 py-2">Nodes</th>
-                    <th className="px-2 py-2">Aktif</th>
-                    <th className="px-2 py-2 text-right">Aksi</th>
+                  <tr className="border-border text-muted border-b text-sm font-semibold">
+                    <th className="px-3 py-3">ID</th>
+                    <th className="px-3 py-3">Nama</th>
+                    <th className="px-3 py-3">Status</th>
+                    <th className="px-3 py-3">IP</th>
+                    <th className="px-3 py-3">MQTT</th>
+                    <th className="px-3 py-3">Firmware</th>
+                    <th className="px-3 py-3">Last Seen</th>
+                    <th className="px-3 py-3">Nodes</th>
+                    <th className="px-3 py-3">Aktif</th>
+                    <th className="px-3 py-3 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -891,50 +783,50 @@ export function PerangkatContainer() {
                       key={s.id}
                       data-testid={`station-row-${s.id}`}
                       className={cn(
-                        'border-border border-b',
+                        'border-border hover:bg-control-hover border-b',
                         !s.isActive && 'opacity-50'
                       )}
                     >
-                      <td className="px-2 py-1.5 font-mono text-xs tabular-nums">
+                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
                         {s.id}
                       </td>
-                      <td className="max-w-[140px] truncate px-2 py-1.5 text-xs">
+                      <td className="max-w-40 truncate px-3 py-3 text-sm">
                         {s.name}
                       </td>
-                      <td className="px-2 py-1.5">
+                      <td className="px-3 py-3">
                         <StatusPill status={s.status} />
                       </td>
-                      <td className="px-2 py-1.5 font-mono text-xs tabular-nums">
-                        {s.ipAddress ?? '—'}
+                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
+                        {s.ipAddress ?? '-'}
                       </td>
-                      <td className="px-2 py-1.5 font-mono text-xs tabular-nums">
+                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
                         {mqttLabel(s)}
                       </td>
-                      <td className="px-2 py-1.5 font-mono text-xs">
-                        {s.firmware ?? '—'}
+                      <td className="px-3 py-3 font-mono text-sm">
+                        {s.firmware ?? '-'}
                       </td>
-                      <td className="text-muted px-2 py-1.5 font-mono text-[11px] tabular-nums">
+                      <td className="text-muted px-3 py-3 font-mono text-sm tabular-nums">
                         {formatRelativeWib(s.lastSeen, now)}
                       </td>
-                      <td className="px-2 py-1.5 font-mono text-xs tabular-nums">
+                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
                         {s.nodeCount ?? 0}
                       </td>
-                      <td className="px-2 py-1.5 text-xs">
+                      <td className="px-3 py-3 text-sm">
                         {s.isActive ? (
                           <span className="text-triage-green">Ya</span>
                         ) : (
                           <span className="text-muted">Tidak</span>
                         )}
                       </td>
-                      <td className="px-2 py-1.5 text-right">
-                        <div className="inline-flex items-center gap-1">
+                      <td className="px-3 py-3 text-right">
+                        <div className="inline-flex items-center gap-2">
                           <button
                             type="button"
                             data-testid={`btn-edit-station-${s.id}`}
                             onClick={() =>
                               setStationDialog({ mode: 'edit', station: s })
                             }
-                            className="border-border bg-background text-foreground hover:border-accent rounded-sm border px-2 py-0.5 text-[11px]"
+                            className="border-border bg-background text-foreground hover:border-accent hover:bg-control-hover min-h-11 border px-3 text-sm"
                           >
                             Edit
                           </button>
@@ -943,7 +835,7 @@ export function PerangkatContainer() {
                               type="button"
                               data-testid={`btn-delete-station-${s.id}`}
                               onClick={() => handleDeleteStation(s)}
-                              className="border-border text-muted hover:border-triage-red hover:text-triage-red rounded-sm border px-2 py-0.5 text-[11px]"
+                              className="border-border text-muted hover:border-triage-red hover:bg-control-hover hover:text-triage-red min-h-11 border px-3 text-sm"
                             >
                               Hapus
                             </button>
@@ -958,15 +850,15 @@ export function PerangkatContainer() {
           )}
         </section>
       ) : (
-        <section className="space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-muted text-xs">Node LoRa · RSSI / SNR / bat</p>
+        <section className="space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <p className="text-muted text-sm">Node LoRa · RSSI / SNR / bat</p>
               <select
                 data-testid="filter-node-station"
                 value={stationFilter}
                 onChange={(e) => setStationFilter(e.target.value)}
-                className="border-border bg-background text-foreground h-8 min-w-[140px] rounded-sm border px-2 text-xs outline-none"
+                className="border-border bg-background text-foreground min-h-11 min-w-36 border px-3 text-sm outline-none"
               >
                 <option value="">Semua station</option>
                 {(stations ?? activeStations ?? []).map((s) => (
@@ -980,14 +872,14 @@ export function PerangkatContainer() {
               type="button"
               data-testid="btn-create-node"
               onClick={() => setNodeDialog({ mode: 'create' })}
-              className="bg-accent text-background hover:bg-accent/90 rounded-sm px-3 py-1.5 text-xs font-semibold transition-colors"
+              className="bg-accent text-accent-foreground hover:opacity-90 inline-flex min-h-11 items-center px-4 text-sm font-semibold transition-colors"
             >
               + Node
             </button>
           </div>
 
           {nodesLoading && !nodes ? (
-            <div className="border-border bg-card h-40 animate-pulse rounded-md border" />
+            <div className="border-border bg-card h-40 animate-pulse border" />
           ) : nodesError && !nodes ? (
             <EmptyState
               title="Gagal memuat node"
@@ -1001,29 +893,29 @@ export function PerangkatContainer() {
                 <button
                   type="button"
                   onClick={() => setNodeDialog({ mode: 'create' })}
-                  className="bg-accent text-background rounded-sm px-3 py-1.5 text-xs font-semibold"
+                  className="bg-accent text-accent-foreground hover:opacity-90 inline-flex min-h-11 items-center px-4 text-sm font-semibold"
                 >
                   Buat node
                 </button>
               }
             />
           ) : (
-            <div className="border-border overflow-x-auto rounded-md border">
+            <div className="border-border overflow-x-auto border">
               <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
                 <thead className="bg-card sticky top-0 z-10">
-                  <tr className="border-border text-muted border-b text-[10px] font-semibold tracking-wider uppercase">
-                    <th className="px-2 py-2">ID</th>
-                    <th className="px-2 py-2">Station</th>
-                    <th className="px-2 py-2">Status</th>
-                    <th className="px-2 py-2">RSSI</th>
-                    <th className="px-2 py-2">SNR</th>
-                    <th className="px-2 py-2">Battery</th>
-                    <th className="px-2 py-2">Firmware</th>
-                    <th className="px-2 py-2">Packets</th>
-                    <th className="px-2 py-2">Last Seen</th>
-                    <th className="px-2 py-2">Victim</th>
-                    <th className="px-2 py-2">Aktif</th>
-                    <th className="px-2 py-2 text-right">Aksi</th>
+                  <tr className="border-border text-muted border-b text-sm font-semibold">
+                    <th className="px-3 py-3">ID</th>
+                    <th className="px-3 py-3">Station</th>
+                    <th className="px-3 py-3">Status</th>
+                    <th className="px-3 py-3">RSSI</th>
+                    <th className="px-3 py-3">SNR</th>
+                    <th className="px-3 py-3">Battery</th>
+                    <th className="px-3 py-3">Firmware</th>
+                    <th className="px-3 py-3">Packets</th>
+                    <th className="px-3 py-3">Last Seen</th>
+                    <th className="px-3 py-3">Victim</th>
+                    <th className="px-3 py-3">Aktif</th>
+                    <th className="px-3 py-3 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1032,66 +924,66 @@ export function PerangkatContainer() {
                       key={n.id}
                       data-testid={`node-row-${n.id}`}
                       className={cn(
-                        'border-border border-b',
+                        'border-border hover:bg-control-hover border-b',
                         !n.isActive && 'opacity-50'
                       )}
                     >
-                      <td className="px-2 py-1.5 font-mono text-xs tabular-nums">
+                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
                         <div className="flex flex-col">
                           <span>{n.id}</span>
-                          <span className="text-muted truncate text-[10px]">
+                          <span className="text-muted truncate text-sm">
                             {n.name}
                           </span>
                         </div>
                       </td>
-                      <td className="max-w-[120px] truncate px-2 py-1.5 text-xs">
+                      <td className="max-w-32 truncate px-3 py-3 text-sm">
                         {n.station?.name ??
                           stationNameById.get(n.stationId) ??
                           n.stationId}
                       </td>
-                      <td className="px-2 py-1.5">
+                      <td className="px-3 py-3">
                         <StatusPill status={n.status} />
                       </td>
-                      <td className="px-2 py-1.5 font-mono text-xs tabular-nums">
-                        {n.rssi == null ? '—' : n.rssi}
+                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
+                        {n.rssi == null ? '-' : n.rssi}
                       </td>
-                      <td className="px-2 py-1.5 font-mono text-xs tabular-nums">
-                        {n.snr == null ? '—' : n.snr}
+                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
+                        {n.snr == null ? '-' : n.snr}
                       </td>
-                      <td className="px-2 py-1.5 font-mono text-xs tabular-nums">
-                        {n.battery == null ? '—' : `${n.battery}%`}
+                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
+                        {n.battery == null ? '-' : `${n.battery}%`}
                       </td>
-                      <td className="px-2 py-1.5 font-mono text-xs">
-                        {n.firmware ?? '—'}
+                      <td className="px-3 py-3 font-mono text-sm">
+                        {n.firmware ?? '-'}
                       </td>
-                      <td className="px-2 py-1.5 font-mono text-xs tabular-nums">
+                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
                         {n.packetCount ?? 0}
                       </td>
-                      <td className="text-muted px-2 py-1.5 font-mono text-[11px] tabular-nums">
+                      <td className="text-muted px-3 py-3 font-mono text-sm tabular-nums">
                         {formatRelativeWib(n.lastSeen, now)}
                       </td>
-                      <td className="max-w-[100px] truncate px-2 py-1.5 font-mono text-xs tabular-nums">
+                      <td className="max-w-28 truncate px-3 py-3 font-mono text-sm tabular-nums">
                         {n.currentVictimId ??
                           n.currentVictim?.id ??
                           n.currentVictim?.rfid ??
-                          '—'}
+                          '-'}
                       </td>
-                      <td className="px-2 py-1.5 text-xs">
+                      <td className="px-3 py-3 text-sm">
                         {n.isActive ? (
                           <span className="text-triage-green">Ya</span>
                         ) : (
                           <span className="text-muted">Tidak</span>
                         )}
                       </td>
-                      <td className="px-2 py-1.5 text-right">
-                        <div className="inline-flex items-center gap-1">
+                      <td className="px-3 py-3 text-right">
+                        <div className="inline-flex items-center gap-2">
                           <button
                             type="button"
                             data-testid={`btn-edit-node-${n.id}`}
                             onClick={() =>
                               setNodeDialog({ mode: 'edit', node: n })
                             }
-                            className="border-border bg-background text-foreground hover:border-accent rounded-sm border px-2 py-0.5 text-[11px]"
+                            className="border-border bg-background text-foreground hover:border-accent hover:bg-control-hover min-h-11 border px-3 text-sm"
                           >
                             Edit
                           </button>
@@ -1100,7 +992,7 @@ export function PerangkatContainer() {
                               type="button"
                               data-testid={`btn-delete-node-${n.id}`}
                               onClick={() => handleDeleteNode(n)}
-                              className="border-border text-muted hover:border-triage-red hover:text-triage-red rounded-sm border px-2 py-0.5 text-[11px]"
+                              className="border-border text-muted hover:border-triage-red hover:bg-control-hover hover:text-triage-red min-h-11 border px-3 text-sm"
                             >
                               Hapus
                             </button>

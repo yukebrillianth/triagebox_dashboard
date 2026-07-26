@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 
-import { Volume2, VolumeX } from 'lucide-react';
+import { Menu, Moon, Sun, Volume2, VolumeX, X } from 'lucide-react';
 
 import { useSettings } from '@/hooks/use-api';
 import {
   useRealtime,
   type ConnectionStatus,
 } from '@/hooks/use-realtime';
+import { useTheme } from '@/hooks/use-theme';
 import { cn } from '@/lib/cn';
 
 function connectionLabel(status: ConnectionStatus): string {
@@ -34,7 +35,7 @@ function connectionClass(status: ConnectionStatus): string {
 }
 
 function formatLastUpdate(ts: number | null, now: number): string {
-  if (ts == null) return '—';
+  if (ts == null) return '-';
   const diffSec = Math.max(0, Math.floor((now - ts) / 1000));
   if (diffSec < 5) return 'baru saja';
   if (diffSec < 60) return `${diffSec}d lalu`;
@@ -43,10 +44,33 @@ function formatLastUpdate(ts: number | null, now: number): string {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+    timeZone: 'Asia/Jakarta',
   });
 }
 
-export function AppTopbar() {
+function formatWibClock(now: number): string {
+  return new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(new Date(now));
+}
+
+type AppTopbarProps = {
+  mobileNavOpen?: boolean;
+  onToggleMobileNav?: () => void;
+};
+
+export function AppTopbar({
+  mobileNavOpen = false,
+  onToggleMobileNav,
+}: AppTopbarProps) {
   const { data: settings } = useSettings();
   const {
     connectionStatus,
@@ -54,6 +78,7 @@ export function AppTopbar() {
     soundEnabled,
     setSoundEnabled,
   } = useRealtime();
+  const { theme, toggleTheme } = useTheme();
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -61,21 +86,39 @@ export function AppTopbar() {
     return () => window.clearInterval(id);
   }, []);
 
-  const hospital = settings?.hospital_name ?? '—';
-  const disaster = settings?.disaster_name ?? '—';
+  const hospital = settings?.hospital_name ?? '-';
+  const disaster = settings?.disaster_name ?? '-';
+  const wibLabel = formatWibClock(now);
 
   return (
     <header
       data-testid="app-topbar"
-      className="bg-card border-border print:hidden flex h-12 shrink-0 items-center gap-3 border-b px-4"
+      className="bg-card border-border print:hidden flex h-[var(--shell-header-height)] shrink-0 items-center gap-3 border-b px-3 sm:px-4 lg:px-6"
     >
+      <button
+        type="button"
+        id="menu-toggle"
+        data-testid="menu-toggle"
+        aria-label={mobileNavOpen ? 'Tutup navigasi' : 'Buka navigasi'}
+        aria-expanded={mobileNavOpen}
+        aria-controls="app-sidebar"
+        onClick={onToggleMobileNav}
+        className="hover:bg-control-hover text-foreground inline-flex size-11 shrink-0 items-center justify-center border border-transparent transition-colors lg:hidden"
+      >
+        {mobileNavOpen ? (
+          <X className="size-5" aria-hidden />
+        ) : (
+          <Menu className="size-5" aria-hidden />
+        )}
+      </button>
+
       <div className="min-w-0 flex-1">
-        <p className="text-foreground truncate text-sm font-semibold tracking-tight">
+        <p className="text-foreground truncate text-base font-semibold tracking-tight">
           TriageBox
         </p>
         <p
           data-testid="topbar-context"
-          className="text-muted truncate text-[11px] leading-tight"
+          className="text-muted truncate text-xs leading-tight sm:text-sm"
         >
           {hospital}
           <span className="mx-1.5 opacity-40">·</span>
@@ -83,50 +126,83 @@ export function AppTopbar() {
         </p>
       </div>
 
-      <div className="flex items-center gap-3 text-xs">
+      <div className="flex items-center gap-2 text-sm sm:gap-3">
+        <time
+          id="wib-clock"
+          data-testid="wib-clock"
+          dateTime={new Date(now).toISOString()}
+          title="Waktu Indonesia Barat"
+          className="text-foreground hidden min-w-[12.5rem] text-right text-xs font-medium tabular-nums sm:block sm:text-sm"
+        >
+          {wibLabel} WIB
+        </time>
+
         <span
           data-testid="connection-badge"
           className={cn(
-            'inline-flex items-center gap-1.5 font-medium',
+            'inline-flex items-center gap-2 font-medium',
             connectionClass(connectionStatus)
           )}
         >
           <span
             className={cn(
-              'inline-block size-1.5 rounded-full',
+              'inline-block size-2.5 shrink-0',
               connectionStatus === 'connected' && 'bg-triage-green',
               connectionStatus === 'connecting' && 'bg-triage-yellow',
               connectionStatus === 'offline' && 'bg-triage-red'
             )}
             aria-hidden
           />
-          {connectionLabel(connectionStatus)}
+          <span className="hidden sm:inline">
+            {connectionLabel(connectionStatus)}
+          </span>
         </span>
 
         <button
           type="button"
+          id="theme-toggle"
+          data-testid="theme-toggle"
+          aria-label={
+            theme === 'dark' ? 'Aktifkan mode terang' : 'Aktifkan mode gelap'
+          }
+          aria-pressed={theme === 'dark'}
+          onClick={toggleTheme}
+          className="hover:bg-control-hover text-foreground inline-flex size-11 items-center justify-center border border-transparent transition-colors"
+        >
+          {theme === 'dark' ? (
+            <Sun className="size-5" aria-hidden />
+          ) : (
+            <Moon className="size-5" aria-hidden />
+          )}
+        </button>
+
+        <button
+          type="button"
+          id="mute-toggle"
           data-testid="mute-toggle"
           aria-label={soundEnabled ? 'Bisukan suara' : 'Nyalakan suara'}
           aria-pressed={!soundEnabled}
           onClick={() => setSoundEnabled(!soundEnabled)}
           className={cn(
-            'hover:bg-background inline-flex size-8 items-center justify-center rounded-sm transition-colors',
+            'hover:bg-control-hover inline-flex size-11 items-center justify-center border border-transparent transition-colors',
             soundEnabled ? 'text-foreground' : 'text-muted'
           )}
         >
           {soundEnabled ? (
-            <Volume2 className="size-4" aria-hidden />
+            <Volume2 className="size-5" aria-hidden />
           ) : (
-            <VolumeX className="size-4" aria-hidden />
+            <VolumeX className="size-5" aria-hidden />
           )}
         </button>
 
         <span
           data-testid="last-update"
-          className="text-muted tabular-nums"
+          className="text-muted hidden tabular-nums md:inline"
           title={
             lastBootstrapAt
-              ? new Date(lastBootstrapAt).toLocaleString('id-ID')
+              ? new Date(lastBootstrapAt).toLocaleString('id-ID', {
+                  timeZone: 'Asia/Jakarta',
+                })
               : undefined
           }
         >

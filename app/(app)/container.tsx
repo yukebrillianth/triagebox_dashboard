@@ -19,10 +19,10 @@ import { cn } from '@/lib/cn';
 import type { Priority } from '@/types';
 
 const TRIAGE_COLORS: Record<Priority, string> = {
-  RED: '#EF4444',
-  YELLOW: '#EAB308',
-  GREEN: '#22C55E',
-  BLACK: '#1F2937',
+  RED: 'var(--triage-red)',
+  YELLOW: 'var(--triage-yellow)',
+  GREEN: 'var(--triage-green)',
+  BLACK: 'var(--triage-black)',
 };
 
 const TRIAGE_LABELS: Record<Priority, string> = {
@@ -35,7 +35,7 @@ const TRIAGE_LABELS: Record<Priority, string> = {
 const PRIORITIES: Priority[] = ['RED', 'YELLOW', 'GREEN', 'BLACK'];
 
 function formatWibClock(ts: number | null): string {
-  if (ts == null) return '—';
+  if (ts == null) return '-';
   return new Date(ts).toLocaleString('id-ID', {
     timeZone: 'Asia/Jakarta',
     day: '2-digit',
@@ -59,14 +59,14 @@ function KpiCard({
   valueClass?: string;
 }) {
   return (
-    <div className="border-border bg-card rounded-md border px-3 py-3">
-      <p className="text-muted text-[11px] font-medium tracking-wider uppercase">
+    <div className="border-border bg-card border px-4 py-4">
+      <p className="text-muted text-sm font-medium">
         {label}
       </p>
       <p
         data-testid={testId}
         className={cn(
-          'mt-1 font-mono text-2xl font-semibold tabular-nums tracking-tight',
+          'mt-2 font-mono text-3xl font-semibold tabular-nums tracking-tight',
           valueClass ?? 'text-foreground'
         )}
       >
@@ -116,18 +116,18 @@ export function BerandaContainer() {
 
   if (kpiLoading && !kpi) {
     return (
-      <div data-testid="page-home" className="space-y-4">
+      <div data-testid="page-home" className="space-y-6 md:space-y-8">
         <header>
-          <h1 className="text-foreground text-xl font-semibold tracking-tight">
+          <h1 className="text-foreground text-2xl font-semibold tracking-tight">
             Beranda
           </h1>
           <p className="text-muted mt-1 text-sm">Memuat ringkasan…</p>
         </header>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="border-border bg-card h-[72px] animate-pulse rounded-md border"
+              className="border-border bg-card h-24 animate-pulse border"
             />
           ))}
         </div>
@@ -137,9 +137,9 @@ export function BerandaContainer() {
 
   if (kpiError && !kpi) {
     return (
-      <div data-testid="page-home" className="space-y-4">
+      <div data-testid="page-home" className="space-y-6 md:space-y-8">
         <header>
-          <h1 className="text-foreground text-xl font-semibold tracking-tight">
+          <h1 className="text-foreground text-2xl font-semibold tracking-tight">
             Beranda
           </h1>
         </header>
@@ -152,19 +152,19 @@ export function BerandaContainer() {
   }
 
   return (
-    <div data-testid="page-home" className="space-y-4">
-      <header className="flex flex-wrap items-end justify-between gap-2">
+    <div data-testid="page-home" className="space-y-6 md:space-y-8">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-foreground text-xl font-semibold tracking-tight">
+          <h1 className="text-foreground text-2xl font-semibold tracking-tight">
             Beranda
           </h1>
-          <p className="text-muted mt-1 text-sm">
+          <p className="text-muted mt-1 text-base">
             Ringkasan triase realtime
           </p>
         </div>
         <p
           data-testid="last-update"
-          className="text-muted font-mono text-xs tabular-nums"
+          className="text-muted font-mono text-sm tabular-nums"
         >
           Update: {formatWibClock(lastBootstrapAt)} WIB
         </p>
@@ -173,23 +173,23 @@ export function BerandaContainer() {
       {criticalUnacked.length > 0 ? (
         <div
           data-testid="critical-strip"
-          className="border-triage-red/40 bg-triage-red/10 flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2"
+          className="border-triage-red bg-card flex flex-wrap items-center justify-between gap-3 border border-l-4 px-4 py-3"
         >
-          <p className="text-triage-red text-sm font-semibold">
+          <p className="text-triage-red text-base font-semibold">
             {criticalUnacked.length} alert CRITICAL belum di-ack
           </p>
           <Link
             href="/alert"
-            className="bg-triage-red rounded-sm px-2.5 py-1 text-xs font-semibold text-white"
+            className="bg-triage-red text-accent-foreground hover:opacity-90 inline-flex min-h-11 items-center px-4 text-sm font-semibold"
           >
-            Buka Alert →
+            Buka Alert
           </Link>
         </div>
       ) : null}
 
       <section
         aria-label="KPI triase"
-        className="grid grid-cols-2 gap-2 md:grid-cols-5"
+        className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-5"
       >
         <KpiCard
           label="Total"
@@ -230,17 +230,17 @@ export function BerandaContainer() {
         />
       ) : null}
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <section className="border-border bg-card rounded-md border p-3 lg:col-span-1">
-          <h2 className="text-foreground text-sm font-semibold tracking-tight">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
+        <section className="border-border bg-card border p-4 lg:col-span-4 xl:col-span-5">
+          <h2 className="text-foreground text-base font-semibold tracking-tight">
             Distribusi Triase
           </h2>
           <div
             data-testid="triage-donut"
-            className="mt-2 h-[220px] w-full"
+            className="mt-4 h-60 w-full"
           >
             {donutData.length === 0 ? (
-              <p className="text-muted flex h-full items-center justify-center text-xs">
+              <p className="text-muted flex h-full items-center justify-center text-sm">
                 Tidak ada data
               </p>
             ) : (
@@ -271,7 +271,7 @@ export function BerandaContainer() {
                       background: 'var(--card)',
                       border: '1px solid var(--border)',
                       borderRadius: 4,
-                      fontSize: 12,
+                      fontSize: 13,
                       color: 'var(--foreground)',
                     }}
                     itemStyle={{ color: 'var(--foreground)' }}
@@ -283,9 +283,9 @@ export function BerandaContainer() {
                   <Legend
                     verticalAlign="bottom"
                     height={28}
-                    iconType="circle"
+                    iconType="square"
                     formatter={(value) => (
-                      <span className="text-muted text-xs">{value}</span>
+                      <span className="text-muted text-sm">{value}</span>
                     )}
                   />
                 </PieChart>
@@ -294,49 +294,49 @@ export function BerandaContainer() {
           </div>
         </section>
 
-        <section className="border-border bg-card rounded-md border p-3 lg:col-span-1">
-          <h2 className="text-foreground text-sm font-semibold tracking-tight">
+        <section className="border-border bg-card border p-4 lg:col-span-3 xl:col-span-3">
+          <h2 className="text-foreground text-base font-semibold tracking-tight">
             Node
           </h2>
-          <div className="mt-4 space-y-3">
+          <div className="mt-5 space-y-4">
             <div className="flex items-baseline justify-between">
-              <span className="text-muted text-xs uppercase tracking-wider">
+              <span className="text-muted text-sm">
                 Online
               </span>
               <span
                 data-testid="nodes-online"
-                className="text-triage-green font-mono text-xl font-semibold tabular-nums"
+                className="text-triage-green font-mono text-2xl font-semibold tabular-nums"
               >
                 {onlineNodes}
               </span>
             </div>
             <div className="flex items-baseline justify-between">
-              <span className="text-muted text-xs uppercase tracking-wider">
+              <span className="text-muted text-sm">
                 Offline
               </span>
               <span
                 data-testid="nodes-offline"
-                className="text-triage-red font-mono text-xl font-semibold tabular-nums"
+                className="text-triage-red font-mono text-2xl font-semibold tabular-nums"
               >
                 {offlineNodes}
               </span>
             </div>
-            <div className="border-border border-t pt-3">
+            <div className="border-border border-t pt-4">
               <div className="flex items-baseline justify-between">
-                <span className="text-muted text-xs uppercase tracking-wider">
+                <span className="text-muted text-sm">
                   Total
                 </span>
                 <span
                   data-testid="nodes-total"
-                  className="text-foreground font-mono text-lg font-semibold tabular-nums"
+                  className="text-foreground font-mono text-xl font-semibold tabular-nums"
                 >
                   {totalNodes}
                 </span>
               </div>
               {totalNodes > 0 ? (
-                <div className="bg-border mt-2 h-1.5 overflow-hidden rounded-full">
+                <div className="bg-border mt-3 h-2 overflow-hidden">
                   <div
-                    className="bg-triage-green h-full rounded-full"
+                    className="bg-triage-green h-full"
                     style={{
                       width: `${Math.min(100, (onlineNodes / totalNodes) * 100)}%`,
                     }}
@@ -347,20 +347,20 @@ export function BerandaContainer() {
           </div>
         </section>
 
-        <section className="border-border bg-card rounded-md border p-3 lg:col-span-1">
-          <h2 className="text-foreground text-sm font-semibold tracking-tight">
+        <section className="border-border bg-card border p-4 lg:col-span-5 xl:col-span-4">
+          <h2 className="text-foreground text-base font-semibold tracking-tight">
             Aktivitas
           </h2>
           <ul
             data-testid="activity-feed"
-            className="mt-2 max-h-[240px] space-y-0 overflow-y-auto"
+            className="mt-4 max-h-72 space-y-0 overflow-y-auto"
           >
             {activityLoading && !activity ? (
-              <li className="text-muted py-6 text-center text-xs">
+              <li className="text-muted py-8 text-center text-sm">
                 Memuat aktivitas…
               </li>
             ) : !activity || activity.length === 0 ? (
-              <li className="text-muted py-6 text-center text-xs">
+              <li className="text-muted py-8 text-center text-sm">
                 Belum ada aktivitas
               </li>
             ) : (
@@ -368,12 +368,12 @@ export function BerandaContainer() {
                 <li
                   key={item.id}
                   data-testid="activity-item"
-                  className="border-border flex gap-2 border-b py-2 last:border-b-0"
+                  className="border-border flex gap-3 border-b py-3 last:border-b-0"
                 >
-                  <span className="text-muted shrink-0 font-mono text-[10px] tabular-nums">
+                  <span className="text-muted shrink-0 font-mono text-sm tabular-nums">
                     {formatRelativeWib(item.createdAt, now)}
                   </span>
-                  <span className="text-foreground min-w-0 flex-1 text-xs leading-snug">
+                  <span className="text-foreground min-w-0 flex-1 text-sm leading-snug">
                     {item.message}
                   </span>
                 </li>

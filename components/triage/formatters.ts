@@ -32,9 +32,9 @@ export function formatRelativeWib(
   iso: string | null | undefined,
   now = Date.now()
 ): string {
-  if (!iso) return '—';
+  if (!iso) return '-';
   const t = Date.parse(iso);
-  if (Number.isNaN(t)) return '—';
+  if (Number.isNaN(t)) return '-';
 
   const diffSec = Math.max(0, Math.floor((now - t) / 1000));
   if (diffSec < 5) return 'baru saja';
@@ -51,12 +51,32 @@ export function formatRelativeWib(
   });
 }
 
+/** Absolute datetime for official reports (WIB). */
+export function formatAbsoluteWib(
+  isoOrMs: string | number | null | undefined
+): string {
+  if (isoOrMs == null || isoOrMs === '') return '-';
+  const t = typeof isoOrMs === 'number' ? isoOrMs : Date.parse(isoOrMs);
+  if (Number.isNaN(t)) return '-';
+
+  return new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(new Date(t));
+}
+
 export function formatBp(
   sys?: number | null,
   dia?: number | null
 ): string {
-  if (sys == null && dia == null) return '—';
-  if (sys == null || dia == null) return '—';
+  if (sys == null && dia == null) return '-';
+  if (sys == null || dia == null) return '-';
   return `${sys}/${dia}`;
 }
 
@@ -69,6 +89,6 @@ export function normalizeConfidence(c?: number | null): number | null {
 
 export function formatConfidence(c?: number | null): string {
   const pct = normalizeConfidence(c);
-  if (pct == null) return '—';
+  if (pct == null) return '-';
   return `${Math.round(pct)}%`;
 }

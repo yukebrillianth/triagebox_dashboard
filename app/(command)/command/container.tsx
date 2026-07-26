@@ -55,7 +55,7 @@ function NodeRow({ node, now }: { node: Node; now: number }) {
     >
       <span
         className={cn(
-          'size-2 shrink-0 rounded-full',
+          'size-2 shrink-0',
           online ? 'bg-triage-green' : 'bg-muted'
         )}
         aria-hidden
@@ -70,10 +70,10 @@ function NodeRow({ node, now }: { node: Node; now: number }) {
       </div>
       <span
         className={cn(
-          'shrink-0 rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase',
+          'shrink-0 border px-1.5 py-0.5 text-[10px] font-semibold',
           online
-            ? 'border-triage-green/40 bg-triage-green/15 text-triage-green'
-            : 'border-border bg-card text-muted'
+            ? 'border-triage-green/50 text-triage-green'
+            : 'border-border text-muted'
         )}
       >
         {node.status}
@@ -84,10 +84,10 @@ function NodeRow({ node, now }: { node: Node; now: number }) {
           batteryClass(node.battery)
         )}
       >
-        {node.battery == null ? '—' : `${Math.round(node.battery)}%`}
+        {node.battery == null ? '-' : `${Math.round(node.battery)}%`}
       </span>
       <span className="text-muted w-20 shrink-0 truncate text-right font-mono text-[10px] tabular-nums">
-        {rfid ?? '—'}
+        {rfid ?? '-'}
       </span>
       <span className="text-muted w-14 shrink-0 text-right font-mono text-[10px] tabular-nums">
         {formatRelativeWib(node.lastSeen, now)}
@@ -106,7 +106,7 @@ function VictimCard({ victim, now }: { victim: Victim; now: number }) {
       data-priority={victim.currentPriority}
       className={cn(
         'border-border rounded-sm border px-2 py-1.5',
-        isRed && 'border-triage-red/50 bg-triage-red/5',
+        isRed && 'border-triage-red/60 bg-triage-red/5',
         stale && 'opacity-60'
       )}
     >
@@ -150,9 +150,7 @@ function KpiCell({
 }) {
   return (
     <div className="border-border bg-card flex min-w-0 flex-col justify-center border-r px-3 py-2 last:border-r-0">
-      <span className="text-muted text-[10px] font-medium tracking-wider uppercase">
-        {label}
-      </span>
+      <span className="text-muted text-[10px] font-medium">{label}</span>
       <span
         className={cn(
           'mt-0.5 font-mono text-xl font-semibold tabular-nums tracking-tight',
@@ -230,22 +228,43 @@ export function CommandContainer() {
       data-testid="page-command"
       className="bg-background text-foreground flex h-dvh min-h-0 flex-col overflow-hidden"
     >
-      <header className="border-border flex shrink-0 items-center justify-between gap-3 border-b px-3 py-2">
-        <div className="min-w-0">
-          <h1 className="text-foreground text-sm font-semibold tracking-tight uppercase">
-            Command Center
-          </h1>
-          <p className="text-muted text-[11px]">
-            Live triage · Esc untuk keluar
-          </p>
+      <header className="border-border bg-card flex h-[var(--shell-header-height)] shrink-0 items-center justify-between gap-3 border-b px-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="relative block h-8 w-[9.5rem] shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-dark-transparant.png"
+              alt="TriageBox"
+              width={152}
+              height={32}
+              className="absolute inset-0 h-8 w-auto max-w-[9.5rem] object-contain object-left dark:hidden"
+            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-light-transparant.png"
+              alt=""
+              width={152}
+              height={32}
+              aria-hidden
+              className="absolute inset-0 hidden h-8 w-auto max-w-[9.5rem] object-contain object-left dark:block"
+            />
+          </span>
+          <div className="border-border min-w-0 border-l pl-3">
+            <h1 className="text-foreground text-sm font-semibold tracking-tight">
+              Command Center
+            </h1>
+            <p className="text-muted text-[11px]">
+              Live triage · Esc untuk keluar
+            </p>
+          </div>
         </div>
         <button
           type="button"
           data-testid="cmd-exit"
           onClick={() => router.push('/')}
-          className="border-border bg-card text-foreground hover:border-accent hover:text-accent shrink-0 rounded-sm border px-3 py-1.5 text-xs font-semibold tracking-wide uppercase transition-colors"
+          className="border-border bg-background text-foreground hover:border-accent hover:text-accent shrink-0 rounded-sm border px-3 py-1.5 text-xs font-semibold transition-colors"
         >
-          Keluar Command
+          Keluar
         </button>
       </header>
 
@@ -254,14 +273,14 @@ export function CommandContainer() {
           data-testid="cmd-critical-banner"
           className="border-triage-red/50 bg-triage-red sticky top-0 z-10 flex shrink-0 flex-wrap items-center justify-between gap-2 border-b px-3 py-1.5 text-white"
         >
-          <p className="text-xs font-semibold tracking-wide">
-            {criticalUnacked.length} ALERT CRITICAL BELUM DI-ACK
+          <p className="text-xs font-semibold">
+            {criticalUnacked.length} alert critical belum di-ack
           </p>
           <Link
             href="/alert"
-            className="rounded-sm bg-white/15 px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase hover:bg-white/25"
+            className="rounded-sm bg-white/15 px-2 py-0.5 text-[11px] font-semibold hover:bg-white/25"
           >
-            Buka Alert →
+            Buka Alert
           </Link>
         </div>
       ) : null}
@@ -305,10 +324,8 @@ export function CommandContainer() {
           aria-label="Node"
           className="border-border flex min-h-0 flex-col border-b lg:border-r lg:border-b-0"
         >
-          <div className="border-border flex shrink-0 items-center justify-between border-b px-3 py-1.5">
-            <h2 className="text-foreground text-xs font-semibold tracking-wider uppercase">
-              Node
-            </h2>
+          <div className="border-border bg-surface-muted/40 flex shrink-0 items-center justify-between border-b px-3 py-1.5">
+            <h2 className="text-foreground text-xs font-semibold">Node</h2>
             <span className="text-muted font-mono text-[10px] tabular-nums">
               {sortedNodes.length}
             </span>
@@ -340,8 +357,8 @@ export function CommandContainer() {
           aria-label="Korban"
           className="border-border flex min-h-0 flex-col border-b lg:border-b-0"
         >
-          <div className="border-border flex shrink-0 items-center justify-between border-b px-3 py-1.5">
-            <h2 className="text-foreground text-xs font-semibold tracking-wider uppercase">
+          <div className="border-border bg-surface-muted/40 flex shrink-0 items-center justify-between border-b px-3 py-1.5">
+            <h2 className="text-foreground text-xs font-semibold">
               Korban · RED first
             </h2>
             <span className="text-muted font-mono text-[10px] tabular-nums">
@@ -376,10 +393,8 @@ export function CommandContainer() {
         aria-label="Aktivitas"
         className="border-border flex h-36 shrink-0 flex-col border-t lg:h-40"
       >
-        <div className="border-border flex shrink-0 items-center justify-between border-b px-3 py-1.5">
-          <h2 className="text-foreground text-xs font-semibold tracking-wider uppercase">
-            Aktivitas
-          </h2>
+        <div className="border-border bg-surface-muted/40 flex shrink-0 items-center justify-between border-b px-3 py-1.5">
+          <h2 className="text-foreground text-xs font-semibold">Aktivitas</h2>
           <span className="text-muted font-mono text-[10px] tabular-nums">
             {(activity ?? []).length}
           </span>

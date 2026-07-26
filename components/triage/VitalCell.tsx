@@ -17,25 +17,25 @@ export function VitalCell({
   className,
   'data-testid': testId,
 }: VitalCellProps) {
-  const display = value == null || Number.isNaN(value) ? '—' : String(value);
+  const display = value == null || Number.isNaN(value) ? '-' : String(value);
 
   return (
     <div
       data-testid={testId}
-      className={cn('flex min-w-0 flex-col gap-0.5', className)}
+      className={cn('flex min-w-0 flex-col gap-1', className)}
     >
-      <span className="text-muted text-[10px] font-medium tracking-wide uppercase">
+      <span className="text-muted text-sm font-medium">
         {label}
       </span>
       <span
         className={cn(
-          'tabular-nums text-sm font-semibold',
+          'tabular-nums text-base font-semibold',
           stale ? 'text-muted' : 'text-foreground'
         )}
       >
         {display}
-        {unit && display !== '—' ? (
-          <span className="text-muted ml-0.5 text-xs font-normal">{unit}</span>
+        {unit && display !== '-' ? (
+          <span className="text-muted ml-1 text-sm font-normal">{unit}</span>
         ) : null}
       </span>
     </div>

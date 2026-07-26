@@ -9,10 +9,10 @@ const LABELS: Record<Priority, string> = {
 };
 
 const STYLES: Record<Priority, string> = {
-  RED: 'bg-triage-red text-white',
-  YELLOW: 'bg-triage-yellow text-black',
-  GREEN: 'bg-triage-green text-black',
-  BLACK: 'bg-triage-black text-white border border-border',
+  RED: 'text-triage-red border-triage-red',
+  YELLOW: 'text-triage-yellow border-triage-yellow',
+  GREEN: 'text-triage-green border-triage-green',
+  BLACK: 'text-triage-black border-border',
 };
 
 type PriorityBadgeProps = {
@@ -26,11 +26,22 @@ export function PriorityBadge({ priority, className }: PriorityBadgeProps) {
       data-testid="priority-badge"
       data-priority={priority}
       className={cn(
-        'inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold tracking-wide uppercase',
+        'inline-flex items-center gap-2 border-l-2 px-2 py-1 text-sm font-semibold print:border-black print:text-black',
         STYLES[priority],
         className
       )}
     >
+      <span
+        className={cn(
+          'inline-block size-2.5 shrink-0 print:size-2',
+          priority === 'RED' && 'bg-triage-red',
+          priority === 'YELLOW' && 'bg-triage-yellow',
+          priority === 'GREEN' && 'bg-triage-green',
+          priority === 'BLACK' && 'bg-triage-black',
+          'print:bg-black'
+        )}
+        aria-hidden
+      />
       {LABELS[priority]}
     </span>
   );

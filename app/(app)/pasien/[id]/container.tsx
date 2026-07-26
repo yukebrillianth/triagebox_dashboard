@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import toast from 'react-hot-toast';
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import { ArrowLeftIcon } from 'lucide-react';
 
 import {
   ConfidenceBar,
@@ -21,6 +22,16 @@ import {
   formatRelativeWib,
   isStale,
 } from '@/components/triage';
+import {
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Field,
+  Input,
+  Select,
+  Textarea,
+} from '@/components/ui';
 import { queryKeys, useVictim } from '@/hooks/use-api';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/cn';
@@ -58,12 +69,7 @@ export function PasienDetailContainer() {
   const id = typeof params?.id === 'string' ? params.id : '';
   const queryClient = useQueryClient();
 
-  const {
-    data: victim,
-    isLoading,
-    isError,
-    error,
-  } = useVictim(id);
+  const { data: victim, isLoading, isError, error } = useVictim(id);
 
   const { data: vitalsHistory } = useQuery({
     queryKey: queryKeys.victims.vitals(id),
@@ -141,14 +147,14 @@ export function PasienDetailContainer() {
 
   if (!id) {
     return (
-      <div data-testid="page-pasien-detail" className="space-y-3">
+      <div data-testid="page-pasien-detail" className="space-y-6 md:space-y-8">
         <EmptyState
           title="ID pasien tidak valid"
           description="Kembali ke daftar pasien."
           action={
             <Link
               href="/pasien"
-              className="border-border bg-card text-foreground rounded-sm border px-3 py-1.5 text-xs"
+              className="border-border bg-card text-foreground hover:bg-control-hover inline-flex min-h-11 items-center border px-4 text-sm"
             >
               Daftar pasien
             </Link>
@@ -160,11 +166,11 @@ export function PasienDetailContainer() {
 
   if (isLoading && !victim) {
     return (
-      <div data-testid="page-pasien-detail" className="space-y-3">
-        <div className="border-border bg-card h-16 animate-pulse rounded-md border" />
-        <div className="grid gap-3 lg:grid-cols-2">
-          <div className="border-border bg-card h-64 animate-pulse rounded-md border" />
-          <div className="border-border bg-card h-64 animate-pulse rounded-md border" />
+      <div data-testid="page-pasien-detail" className="space-y-6 md:space-y-8">
+        <div className="border-border bg-card h-24 animate-pulse border" />
+        <div className="grid gap-6 lg:grid-cols-12">
+          <div className="border-border bg-card h-64 animate-pulse border lg:col-span-7" />
+          <div className="border-border bg-card h-64 animate-pulse border lg:col-span-5" />
         </div>
       </div>
     );
@@ -172,14 +178,14 @@ export function PasienDetailContainer() {
 
   if (isError && !victim) {
     return (
-      <div data-testid="page-pasien-detail" className="space-y-3">
+      <div data-testid="page-pasien-detail" className="space-y-6 md:space-y-8">
         <EmptyState
           title="Pasien tidak ditemukan"
           description={getErrorMessage(error)}
           action={
             <Link
               href="/pasien"
-              className="border-border bg-card text-foreground rounded-sm border px-3 py-1.5 text-xs"
+              className="border-border bg-card text-foreground hover:bg-control-hover inline-flex min-h-11 items-center border px-4 text-sm"
             >
               Kembali
             </Link>
@@ -205,30 +211,31 @@ export function PasienDetailContainer() {
     : (latestVital?.reasons ?? []);
 
   return (
-    <div data-testid="page-pasien-detail" className="space-y-3">
+    <div data-testid="page-pasien-detail" className="space-y-6 md:space-y-8">
       {/* Header strip */}
-      <header className="border-border bg-card flex flex-wrap items-center gap-3 rounded-md border px-3 py-2.5">
+      <header className="border-border bg-card flex flex-wrap items-center gap-5 border p-4 md:p-6">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/pasien"
-              className="text-muted hover:text-foreground text-xs transition-colors"
+              className="text-muted hover:text-foreground inline-flex min-h-11 items-center text-sm transition-colors"
             >
-              ← Pasien
+              <ArrowLeftIcon className="mr-2 size-4" aria-hidden />
+              Pasien
             </Link>
             {needsReg ? (
               <span
                 data-testid="badge-perlu-registrasi"
-                className="bg-triage-yellow/15 text-triage-yellow border-triage-yellow/40 rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase"
+                className="text-triage-yellow border-triage-yellow border-l-2 pl-2 text-sm font-semibold"
               >
                 Perlu registrasi
               </span>
             ) : null}
           </div>
-          <h1 className="text-foreground mt-1 text-lg font-semibold tracking-tight">
+          <h1 className="text-foreground mt-2 text-2xl font-semibold tracking-tight">
             {victim.name?.trim() || 'Belum terdaftar'}
           </h1>
-          <p className="text-muted mt-0.5 font-mono text-xs tabular-nums">
+          <p className="text-muted mt-1 font-mono text-sm tabular-nums">
             RFID{' '}
             <span className="text-foreground" title="readonly">
               {victim.rfid}
@@ -240,49 +247,50 @@ export function PasienDetailContainer() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-4">
           <PriorityBadge priority={victim.currentPriority} />
-          <div className="min-w-[5rem]">
-            <span className="text-muted block text-[10px] font-medium tracking-wide uppercase">
+          <div className="min-w-24">
+            <span className="text-muted block text-sm font-medium">
               Confidence
             </span>
-            <span className="text-foreground font-mono text-sm tabular-nums">
+            <span className="text-foreground font-mono text-base tabular-nums">
               {formatConfidence(victim.confidence)}
             </span>
           </div>
           {victim.currentNodeId ? (
             <Link
               href={`/perangkat?node=${encodeURIComponent(victim.currentNodeId)}`}
-              className="border-border bg-background hover:border-accent text-foreground rounded-sm border px-2 py-1 font-mono text-xs tabular-nums transition-colors"
+              className="border-border bg-background hover:border-accent hover:bg-control-hover text-foreground inline-flex min-h-11 items-center border px-3 font-mono text-sm tabular-nums transition-colors"
               title="Node aktif"
             >
               Node {victim.currentNodeId}
             </Link>
           ) : (
-            <span className="text-muted text-xs">Node —</span>
+            <span className="text-muted text-sm">Node -</span>
           )}
           <StaleIndicator lastUpdate={victim.lastUpdate} />
         </div>
       </header>
 
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-12">
         {/* Left: vitals + ML */}
-        <div className="space-y-3">
-          <section className="border-border bg-card rounded-md border p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-foreground text-sm font-semibold tracking-tight">
+        <div className="space-y-6 lg:col-span-7">
+          <section className="border-border bg-card border p-4 md:p-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-foreground text-lg font-semibold tracking-tight">
                 Vitals live
               </h2>
               <span
                 className={cn(
-                  'text-[10px] font-semibold tracking-wide uppercase',
+                  'border-l-2 pl-2 text-sm font-semibold',
+                  stale ? 'border-border' : 'border-accent',
                   stale ? 'text-muted' : 'text-accent'
                 )}
               >
-                {stale ? 'Stale' : 'Live'}
+                {stale ? 'Data lama' : 'Live'}
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
               <VitalCell
                 label="HR"
                 value={hr}
@@ -304,20 +312,18 @@ export function PasienDetailContainer() {
                 stale={stale}
                 data-testid="vital-rr"
               />
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-muted text-[10px] font-medium tracking-wide uppercase">
-                  BP
-                </span>
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className="text-muted text-sm font-medium">BP</span>
                 <span
                   data-testid="vital-bp"
                   className={cn(
-                    'tabular-nums text-sm font-semibold',
+                    'text-base font-semibold tabular-nums',
                     stale ? 'text-muted' : 'text-foreground'
                   )}
                 >
                   {formatBp(bpSys, bpDia)}
                   {bpSys != null && bpDia != null ? (
-                    <span className="text-muted ml-0.5 text-xs font-normal">
+                    <span className="text-muted ml-1 text-sm font-normal">
                       mmHg
                     </span>
                   ) : null}
@@ -333,19 +339,19 @@ export function PasienDetailContainer() {
             </div>
           </section>
 
-          <section className="border-border bg-card rounded-md border p-3">
-            <h2 className="text-foreground mb-2 text-sm font-semibold tracking-tight">
+          <section className="border-border bg-card border p-4 md:p-6">
+            <h2 className="text-foreground mb-4 text-lg font-semibold tracking-tight">
               ML Explain
             </h2>
-            <ConfidenceBar value={victim.confidence} className="mb-3" />
+            <ConfidenceBar value={victim.confidence} className="mb-4" />
             {reasons.length === 0 ? (
-              <p className="text-muted text-xs">Belum ada alasan triage.</p>
+              <p className="text-muted text-sm">Belum ada alasan triage.</p>
             ) : (
-              <ul className="space-y-1.5">
+              <ul className="space-y-2">
                 {reasons.map((r, i) => (
                   <li
                     key={`${i}-${r.slice(0, 24)}`}
-                    className="border-border bg-background text-foreground flex gap-2 rounded-sm border px-2 py-1.5 text-xs leading-relaxed"
+                    className="border-border bg-background text-foreground flex gap-3 border px-3 py-2 text-sm leading-relaxed"
                   >
                     <span className="text-accent font-mono tabular-nums">
                       {i + 1}.
@@ -359,23 +365,23 @@ export function PasienDetailContainer() {
 
           <section
             data-testid="vitals-history"
-            className="border-border bg-card rounded-md border p-3"
+            className="border-border bg-card border p-4 md:p-6"
           >
-            <h2 className="text-foreground mb-2 text-sm font-semibold tracking-tight">
+            <h2 className="text-foreground mb-4 text-lg font-semibold tracking-tight">
               Riwayat vital
             </h2>
             {vitalsHistory?.length ? (
               <div className="overflow-x-auto">
-                <table className="w-full text-xs">
+                <table className="w-full min-w-[640px] text-sm">
                   <thead>
-                    <tr className="text-muted border-border border-b text-left text-[10px] font-medium tracking-wide uppercase">
-                      <th className="py-1.5 pr-2 font-medium">Waktu</th>
-                      <th className="py-1.5 pr-2 font-medium">HR</th>
-                      <th className="py-1.5 pr-2 font-medium">SpO2</th>
-                      <th className="py-1.5 pr-2 font-medium">RR</th>
-                      <th className="py-1.5 pr-2 font-medium">BP</th>
-                      <th className="py-1.5 pr-2 font-medium">Bat</th>
-                      <th className="py-1.5 font-medium">Prio</th>
+                    <tr className="text-muted border-border border-b text-left text-sm font-semibold">
+                      <th className="py-3 pr-3">Waktu</th>
+                      <th className="py-3 pr-3">HR</th>
+                      <th className="py-3 pr-3">SpO2</th>
+                      <th className="py-3 pr-3">RR</th>
+                      <th className="py-3 pr-3">BP</th>
+                      <th className="py-3 pr-3">Bat</th>
+                      <th className="py-3">Prio</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -388,29 +394,29 @@ export function PasienDetailContainer() {
                           key={r.id}
                           className="border-border/60 border-b last:border-0"
                         >
-                          <td className="text-muted py-1.5 pr-2 font-mono tabular-nums whitespace-nowrap">
+                          <td className="text-muted py-3 pr-3 font-mono whitespace-nowrap tabular-nums">
                             {formatRelativeWib(r.deviceTs ?? r.createdAt, now)}
                           </td>
-                          <td className="text-foreground py-1.5 pr-2 font-mono tabular-nums">
-                            {r.hr ?? '—'}
+                          <td className="text-foreground py-3 pr-3 font-mono tabular-nums">
+                            {r.hr ?? '-'}
                           </td>
-                          <td className="text-foreground py-1.5 pr-2 font-mono tabular-nums">
-                            {r.spo2 ?? '—'}
+                          <td className="text-foreground py-3 pr-3 font-mono tabular-nums">
+                            {r.spo2 ?? '-'}
                           </td>
-                          <td className="text-foreground py-1.5 pr-2 font-mono tabular-nums">
-                            {r.rr ?? '—'}
+                          <td className="text-foreground py-3 pr-3 font-mono tabular-nums">
+                            {r.rr ?? '-'}
                           </td>
-                          <td className="text-foreground py-1.5 pr-2 font-mono tabular-nums whitespace-nowrap">
+                          <td className="text-foreground py-3 pr-3 font-mono whitespace-nowrap tabular-nums">
                             {formatBp(r.bpSys, r.bpDia)}
                           </td>
-                          <td className="text-foreground py-1.5 pr-2 font-mono tabular-nums">
-                            {r.battery ?? '—'}
+                          <td className="text-foreground py-3 pr-3 font-mono tabular-nums">
+                            {r.battery ?? '-'}
                           </td>
-                          <td className="py-1.5">
+                          <td className="py-3">
                             {prio ? (
                               <PriorityBadge priority={prio} />
                             ) : (
-                              <span className="text-muted">—</span>
+                              <span className="text-muted">-</span>
                             )}
                           </td>
                         </tr>
@@ -420,189 +426,150 @@ export function PasienDetailContainer() {
                 </table>
               </div>
             ) : (
-              <p className="text-muted text-xs">Belum ada riwayat vital</p>
+              <p className="text-muted text-sm">Belum ada riwayat vital</p>
             )}
           </section>
         </div>
 
         {/* Right: form + history */}
-        <div className="space-y-3">
-          <section className="border-border bg-card rounded-md border p-3">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="text-foreground text-sm font-semibold tracking-tight">
-                Registrasi
-              </h2>
-              <span className="text-muted text-[10px] tracking-wide uppercase">
-                Prioritas ML (readonly)
-              </span>
-            </div>
-
-            <form
-              onSubmit={handleSubmit(onSubmit)}
-              className="space-y-2.5"
-              noValidate
-            >
-              <div>
-                <label
+        <div className="space-y-6 lg:col-span-5">
+          <Card>
+            <CardHeader
+              title="Registrasi"
+              className="px-4 py-4 md:px-6"
+              action={
+                <span className="text-muted text-sm">
+                  Prioritas ML (readonly)
+                </span>
+              }
+            />
+            <CardBody className="space-y-4 p-4 md:p-6">
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="space-y-3"
+                noValidate
+              >
+                <Field
+                  label="Nama"
                   htmlFor="input-name"
-                  className="text-muted mb-1 block text-[11px] font-medium tracking-wide uppercase"
+                  required
+                  error={errors.name?.message}
                 >
-                  Nama <span className="text-triage-red">*</span>
-                </label>
-                <input
-                  id="input-name"
-                  data-testid="input-name"
-                  type="text"
-                  autoComplete="name"
-                  maxLength={128}
-                  className={cn(
-                    'border-border bg-background text-foreground placeholder:text-muted focus:border-accent h-9 w-full rounded-sm border px-2.5 text-sm outline-none',
-                    errors.name && 'border-triage-red'
-                  )}
-                  placeholder="Nama korban"
-                  {...register('name')}
-                />
-                {errors.name ? (
-                  <p className="text-triage-red mt-1 text-[11px]">
-                    {errors.name.message}
-                  </p>
-                ) : null}
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label
-                    htmlFor="input-age"
-                    className="text-muted mb-1 block text-[11px] font-medium tracking-wide uppercase"
-                  >
-                    Usia
-                  </label>
-                  <input
-                    id="input-age"
-                    data-testid="input-age"
-                    type="number"
-                    inputMode="numeric"
-                    min={0}
-                    max={150}
-                    className={cn(
-                      'border-border bg-background text-foreground placeholder:text-muted focus:border-accent h-9 w-full rounded-sm border px-2.5 font-mono text-sm tabular-nums outline-none',
-                      errors.age && 'border-triage-red'
-                    )}
-                    placeholder="—"
-                    {...register('age')}
+                  <Input
+                    id="input-name"
+                    data-testid="input-name"
+                    type="text"
+                    autoComplete="name"
+                    maxLength={128}
+                    placeholder="Nama korban"
+                    {...register('name')}
                   />
-                  {errors.age ? (
-                    <p className="text-triage-red mt-1 text-[11px]">
-                      {errors.age.message}
-                    </p>
-                  ) : null}
-                </div>
+                </Field>
 
-                <div>
-                  <label
+                <div className="grid grid-cols-2 gap-3">
+                  <Field
+                    label="Usia"
+                    htmlFor="input-age"
+                    error={errors.age?.message}
+                  >
+                    <Input
+                      id="input-age"
+                      data-testid="input-age"
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      max={150}
+                      className="font-mono tabular-nums"
+                      placeholder="-"
+                      {...register('age')}
+                    />
+                  </Field>
+
+                  <Field
+                    label="Gender"
                     htmlFor="select-gender"
-                    className="text-muted mb-1 block text-[11px] font-medium tracking-wide uppercase"
+                    error={errors.gender?.message}
                   >
-                    Gender
-                  </label>
-                  <select
-                    id="select-gender"
-                    data-testid="select-gender"
-                    className={cn(
-                      'border-border bg-background text-foreground focus:border-accent h-9 w-full rounded-sm border px-2 text-sm outline-none',
-                      errors.gender && 'border-triage-red'
-                    )}
-                    {...register('gender')}
-                  >
-                    <option value="">—</option>
-                    <option value="M">L (Laki-laki)</option>
-                    <option value="F">P (Perempuan)</option>
-                    <option value="U">U (Tidak diketahui)</option>
-                  </select>
-                  {errors.gender ? (
-                    <p className="text-triage-red mt-1 text-[11px]">
-                      {errors.gender.message}
-                    </p>
-                  ) : null}
+                    <Select
+                      id="select-gender"
+                      data-testid="select-gender"
+                      {...register('gender')}
+                    >
+                      <option value="">Tidak ada</option>
+                      <option value="M">L (Laki-laki)</option>
+                      <option value="F">P (Perempuan)</option>
+                      <option value="U">U (Tidak diketahui)</option>
+                    </Select>
+                  </Field>
                 </div>
-              </div>
 
-              <div>
-                <label
+                <Field
+                  label="Catatan"
                   htmlFor="input-notes"
-                  className="text-muted mb-1 block text-[11px] font-medium tracking-wide uppercase"
+                  error={errors.notes?.message}
                 >
-                  Catatan
-                </label>
-                <textarea
-                  id="input-notes"
-                  data-testid="input-notes"
-                  rows={3}
-                  maxLength={1024}
-                  className={cn(
-                    'border-border bg-background text-foreground placeholder:text-muted focus:border-accent w-full resize-y rounded-sm border px-2.5 py-2 text-sm outline-none',
-                    errors.notes && 'border-triage-red'
-                  )}
-                  placeholder="Catatan medis / lokasi / kontak…"
-                  {...register('notes')}
-                />
-                {errors.notes ? (
-                  <p className="text-triage-red mt-1 text-[11px]">
-                    {errors.notes.message}
-                  </p>
-                ) : null}
-              </div>
+                  <Textarea
+                    id="input-notes"
+                    data-testid="input-notes"
+                    rows={3}
+                    maxLength={1024}
+                    placeholder="Catatan medis / lokasi / kontak"
+                    {...register('notes')}
+                  />
+                </Field>
 
-              <div className="flex items-center justify-end gap-2 pt-1">
-                <button
-                  type="submit"
-                  data-testid="btn-save-registrasi"
-                  disabled={isSubmitting}
-                  className="bg-accent text-background hover:bg-accent/90 disabled:bg-muted h-9 rounded-sm px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isSubmitting ? 'Menyimpan…' : 'Simpan registrasi'}
-                </button>
-              </div>
-            </form>
-          </section>
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <Button
+                    type="submit"
+                    data-testid="btn-save-registrasi"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Menyimpan…' : 'Simpan registrasi'}
+                  </Button>
+                </div>
+              </form>
+            </CardBody>
+          </Card>
 
-          <section className="border-border bg-card rounded-md border p-3">
-            <h2 className="text-foreground mb-2 text-sm font-semibold tracking-tight">
+          <section className="border-border bg-card border p-4 md:p-6">
+            <h2 className="text-foreground mb-4 text-lg font-semibold tracking-tight">
               Riwayat triage
             </h2>
             {historyLoading && !triageHistory ? (
               <div className="border-border bg-background h-24 animate-pulse rounded-sm border" />
             ) : !triageHistory || triageHistory.length === 0 ? (
-              <p className="text-muted text-xs">Belum ada perubahan prioritas.</p>
+              <p className="text-muted text-sm">
+                Belum ada perubahan prioritas.
+              </p>
             ) : (
-              <ol className="relative space-y-0 border-l border-border pl-3">
+              <ol className="border-border relative space-y-0 border-l pl-4">
                 {triageHistory.map((h: TriageHistory) => {
                   const to = asPriority(h.toPriority);
                   const from = asPriority(h.fromPriority ?? null);
                   return (
-                    <li key={h.id} className="relative pb-3 last:pb-0">
-                      <span className="bg-accent absolute top-1.5 -left-[calc(0.375rem+1px)] size-1.5 rounded-full" />
-                      <div className="flex flex-wrap items-center gap-1.5">
+                    <li key={h.id} className="relative pb-4 last:pb-0">
+                      <span className="bg-accent absolute top-2 -left-[calc(0.25rem+1px)] size-2" />
+                      <div className="flex flex-wrap items-center gap-2">
                         {from ? <PriorityBadge priority={from} /> : null}
                         {from ? (
-                          <span className="text-muted text-[10px]">→</span>
+                          <span className="text-muted text-sm">→</span>
                         ) : null}
                         {to ? (
                           <PriorityBadge priority={to} />
                         ) : (
-                          <span className="text-foreground text-xs font-semibold">
+                          <span className="text-foreground text-sm font-semibold">
                             {h.toPriority}
                           </span>
                         )}
-                        <span className="text-muted font-mono text-[11px] tabular-nums">
+                        <span className="text-muted font-mono text-sm tabular-nums">
                           {formatConfidence(h.confidence)}
                         </span>
                       </div>
-                      <p className="text-muted mt-0.5 font-mono text-[11px] tabular-nums">
+                      <p className="text-muted mt-1 font-mono text-sm tabular-nums">
                         {formatRelativeWib(h.createdAt, now)}
                       </p>
                       {h.reasons?.length ? (
-                        <p className="text-muted mt-0.5 line-clamp-2 text-[11px]">
+                        <p className="text-muted mt-1 line-clamp-2 text-sm">
                           {h.reasons.join(' · ')}
                         </p>
                       ) : null}

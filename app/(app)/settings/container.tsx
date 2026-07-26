@@ -7,11 +7,18 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 
+import {
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Field,
+  Input,
+} from '@/components/ui';
 import { queryKeys, useSettings } from '@/hooks/use-api';
 import { useRealtime } from '@/hooks/use-realtime';
 import { api } from '@/lib/api';
 import { getApiBaseUrl } from '@/lib/config';
-import { cn } from '@/lib/cn';
 import { getErrorMessage, getValidationErrors } from '@/lib/http-error';
 import {
   settingsFormSchema,
@@ -90,172 +97,160 @@ export function SettingsContainer() {
           </h1>
           <p className="text-muted mt-1 text-sm">Memuat…</p>
         </header>
-        <div className="border-border bg-card h-48 animate-pulse rounded-md border" />
+        <div className="border-border bg-card h-48 animate-pulse border" />
       </div>
     );
   }
 
   return (
-    <div data-testid="page-settings" className="mx-auto max-w-xl space-y-6">
-      <header>
+    <div data-testid="page-settings" className="space-y-4">
+      <header className="border-border bg-card border px-4 py-3">
         <h1 className="text-foreground text-xl font-semibold tracking-tight">
           Pengaturan
         </h1>
         <p className="text-muted mt-1 text-sm">
-          Nama rumah sakit, bencana, operator, dan preferensi lokal.
+          Identitas operasional, preferensi lokal, dan status koneksi API.
         </p>
       </header>
 
       {isError && !settings ? (
-        <div className="border-triage-red/40 bg-triage-red/5 rounded-md border px-3 py-2 text-sm">
-          <p className="text-triage-red font-medium">Gagal memuat pengaturan</p>
-          <p className="text-muted mt-0.5 text-xs">
-            {error instanceof Error ? error.message : 'Error tidak diketahui'}
-          </p>
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className="text-accent mt-2 text-xs font-semibold underline"
-          >
-            Coba lagi
-          </button>
-        </div>
+        <Card className="border-triage-red">
+          <CardBody className="space-y-2">
+            <p className="text-triage-red font-semibold">
+              Gagal memuat pengaturan
+            </p>
+            <p className="text-muted text-sm">
+              {error instanceof Error ? error.message : 'Error tidak diketahui'}
+            </p>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => void refetch()}
+            >
+              Coba lagi
+            </Button>
+          </CardBody>
+        </Card>
       ) : null}
 
-      <form
-        data-testid="settings-form"
-        onSubmit={handleSubmit(onSubmit)}
-        className="border-border bg-card space-y-4 rounded-md border p-4"
-      >
-        <div className="space-y-1.5">
-          <label
-            htmlFor="hospital_name"
-            className="text-foreground text-xs font-medium"
-          >
-            Nama rumah sakit
-          </label>
-          <input
-            id="hospital_name"
-            data-testid="input-hospital"
-            type="text"
-            autoComplete="organization"
-            {...register('hospital_name')}
-            className={cn(
-              'border-border bg-background text-foreground placeholder:text-muted focus:border-accent focus:ring-accent/30 w-full rounded-sm border px-3 py-2 text-sm outline-none focus:ring-1',
-              errors.hospital_name && 'border-triage-red'
-            )}
-            placeholder="RS Lapangan A"
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card data-testid="settings-form-card" className="lg:col-span-2">
+          <CardHeader
+            title="Identitas operasional"
+            description="Nama RS, bencana, dan operator yang tampil di topbar."
           />
-          {errors.hospital_name ? (
-            <p className="text-triage-red text-xs">
-              {errors.hospital_name.message}
+          <CardBody>
+            <form
+              data-testid="settings-form"
+              onSubmit={handleSubmit(onSubmit)}
+              className="grid gap-4 sm:grid-cols-2"
+              noValidate
+            >
+              <Field
+                label="Nama rumah sakit"
+                htmlFor="hospital_name"
+                required
+                error={errors.hospital_name?.message}
+                className="sm:col-span-1"
+              >
+                <Input
+                  id="hospital_name"
+                  data-testid="input-hospital"
+                  type="text"
+                  autoComplete="organization"
+                  placeholder="RS Lapangan A"
+                  {...register('hospital_name')}
+                />
+              </Field>
+
+              <Field
+                label="Nama bencana / insiden"
+                htmlFor="disaster_name"
+                required
+                error={errors.disaster_name?.message}
+                className="sm:col-span-1"
+              >
+                <Input
+                  id="disaster_name"
+                  data-testid="input-disaster"
+                  type="text"
+                  placeholder="Gempa Demo 2026"
+                  {...register('disaster_name')}
+                />
+              </Field>
+
+              <Field
+                label="Operator"
+                htmlFor="operator"
+                optional
+                error={errors.operator?.message}
+                className="sm:col-span-2"
+              >
+                <Input
+                  id="operator"
+                  data-testid="input-operator"
+                  type="text"
+                  autoComplete="name"
+                  placeholder="Nama operator"
+                  {...register('operator')}
+                />
+              </Field>
+
+              <div className="flex justify-end sm:col-span-2">
+                <Button
+                  type="submit"
+                  data-testid="btn-save-settings"
+                  disabled={isSubmitting || !isDirty}
+                >
+                  {isSubmitting ? 'Menyimpan…' : 'Simpan'}
+                </Button>
+              </div>
+            </form>
+          </CardBody>
+        </Card>
+
+        <Card data-testid="settings-sound">
+          <CardHeader
+            title="Suara alert"
+            description="Preferensi lokal browser ini. Tidak dikirim ke server."
+          />
+          <CardBody>
+            <label className="border-border bg-background hover:bg-control-hover flex min-h-11 cursor-pointer items-center gap-3 border px-3">
+              <input
+                data-testid="toggle-sound"
+                type="checkbox"
+                checked={soundEnabled}
+                onChange={(e) => setSoundEnabled(e.target.checked)}
+                className="border-border text-accent size-5 shrink-0 border accent-[var(--accent)]"
+              />
+              <span className="text-foreground text-sm font-medium">
+                {soundEnabled ? 'Suara aktif' : 'Suara dimatikan'}
+              </span>
+            </label>
+          </CardBody>
+        </Card>
+
+        <Card data-testid="settings-api-url">
+          <CardHeader
+            title="Koneksi API"
+            description={
+              <>
+                Hanya tampilan. Ubah lewat env{' '}
+                <code className="font-mono">NEXT_PUBLIC_API_URL</code>.
+              </>
+            }
+          />
+          <CardBody>
+            <p
+              data-testid="display-api-url"
+              className="border-border bg-background text-foreground border px-3 py-3 font-mono text-sm break-all"
+            >
+              {apiUrl}
             </p>
-          ) : null}
-        </div>
-
-        <div className="space-y-1.5">
-          <label
-            htmlFor="disaster_name"
-            className="text-foreground text-xs font-medium"
-          >
-            Nama bencana / insiden
-          </label>
-          <input
-            id="disaster_name"
-            data-testid="input-disaster"
-            type="text"
-            {...register('disaster_name')}
-            className={cn(
-              'border-border bg-background text-foreground placeholder:text-muted focus:border-accent focus:ring-accent/30 w-full rounded-sm border px-3 py-2 text-sm outline-none focus:ring-1',
-              errors.disaster_name && 'border-triage-red'
-            )}
-            placeholder="Gempa Demo 2026"
-          />
-          {errors.disaster_name ? (
-            <p className="text-triage-red text-xs">
-              {errors.disaster_name.message}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="space-y-1.5">
-          <label
-            htmlFor="operator"
-            className="text-foreground text-xs font-medium"
-          >
-            Operator <span className="text-muted font-normal">(opsional)</span>
-          </label>
-          <input
-            id="operator"
-            data-testid="input-operator"
-            type="text"
-            autoComplete="name"
-            {...register('operator')}
-            className={cn(
-              'border-border bg-background text-foreground placeholder:text-muted focus:border-accent focus:ring-accent/30 w-full rounded-sm border px-3 py-2 text-sm outline-none focus:ring-1',
-              errors.operator && 'border-triage-red'
-            )}
-            placeholder="Nama operator"
-          />
-          {errors.operator ? (
-            <p className="text-triage-red text-xs">{errors.operator.message}</p>
-          ) : null}
-        </div>
-
-        <div className="flex justify-end pt-1">
-          <button
-            type="submit"
-            data-testid="btn-save-settings"
-            disabled={isSubmitting || !isDirty}
-            className="bg-accent text-background hover:bg-accent/90 rounded-sm px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50"
-          >
-            {isSubmitting ? 'Menyimpan…' : 'Simpan'}
-          </button>
-        </div>
-      </form>
-
-      <section
-        data-testid="settings-sound"
-        className="border-border bg-card space-y-3 rounded-md border p-4"
-      >
-        <h2 className="text-foreground text-sm font-semibold tracking-tight">
-          Suara alert
-        </h2>
-        <p className="text-muted text-xs">
-          Toggle lokal di browser ini (tidak dikirim ke server).
-        </p>
-        <label className="flex cursor-pointer items-center gap-3">
-          <input
-            data-testid="toggle-sound"
-            type="checkbox"
-            checked={soundEnabled}
-            onChange={(e) => setSoundEnabled(e.target.checked)}
-            className="border-border text-accent focus:ring-accent size-4 rounded-sm"
-          />
-          <span className="text-foreground text-sm">
-            {soundEnabled ? 'Suara aktif' : 'Suara dimatikan'}
-          </span>
-        </label>
-      </section>
-
-      <section
-        data-testid="settings-api-url"
-        className="border-border bg-card space-y-2 rounded-md border p-4"
-      >
-        <h2 className="text-foreground text-sm font-semibold tracking-tight">
-          Koneksi API
-        </h2>
-        <p className="text-muted text-xs">
-          URL backend (hanya tampilan, diubah lewat env{' '}
-          <code className="font-mono">NEXT_PUBLIC_API_URL</code>).
-        </p>
-        <p
-          data-testid="display-api-url"
-          className="text-foreground border-border bg-background rounded-sm border px-3 py-2 font-mono text-xs break-all"
-        >
-          {apiUrl}
-        </p>
-      </section>
+          </CardBody>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -40,13 +40,13 @@ const PRIORITY_RANK: Record<Priority, number> = {
 };
 
 const PRIORITY_CHIP: Record<Priority, string> = {
-  RED: 'border-triage-red/40 data-[active=true]:bg-triage-red/15 data-[active=true]:text-triage-red',
+  RED: 'border-triage-red data-[active=true]:border-l-triage-red data-[active=true]:text-triage-red data-[active=true]:bg-surface-muted',
   YELLOW:
-    'border-triage-yellow/40 data-[active=true]:bg-triage-yellow/15 data-[active=true]:text-triage-yellow',
+    'border-triage-yellow data-[active=true]:border-l-triage-yellow data-[active=true]:text-triage-yellow data-[active=true]:bg-surface-muted',
   GREEN:
-    'border-triage-green/40 data-[active=true]:bg-triage-green/15 data-[active=true]:text-triage-green',
+    'border-triage-green data-[active=true]:border-l-triage-green data-[active=true]:text-triage-green data-[active=true]:bg-surface-muted',
   BLACK:
-    'border-border data-[active=true]:bg-card data-[active=true]:text-foreground',
+    'border-border data-[active=true]:bg-surface-muted data-[active=true]:text-foreground',
 };
 
 function lastUpdateMs(v: Victim): number {
@@ -76,34 +76,34 @@ function VictimRow({
       data-flash={flashing ? 'true' : undefined}
       onClick={() => router.push(`/pasien/${victim.id}`)}
       className={cn(
-        'border-border hover:bg-card/80 cursor-pointer border-b transition-colors',
+        'border-border hover:bg-control-hover cursor-pointer border-b transition-colors',
         stale && 'opacity-60',
-        flashing && 'bg-accent/15 ring-accent/40 ring-1 ring-inset'
+        flashing && 'bg-surface-muted outline-accent outline outline-2 -outline-offset-2'
       )}
     >
-      <td className="px-2 py-1.5 font-mono text-xs tabular-nums">
+      <td className="px-3 py-3 font-mono text-sm tabular-nums">
         {victim.rfid}
       </td>
-      <td className="max-w-[140px] truncate px-2 py-1.5 text-xs">
+      <td className="max-w-40 truncate px-3 py-3 text-sm">
         {victim.name?.trim() ? victim.name : 'Belum terdaftar'}
       </td>
-      <td className="px-2 py-1.5 text-xs tabular-nums">
-        {victim.age == null ? '—' : victim.age}
+      <td className="px-3 py-3 text-sm tabular-nums">
+        {victim.age == null ? '-' : victim.age}
       </td>
-      <td className="px-2 py-1.5 text-xs">{genderLabel(victim.gender)}</td>
-      <td className="px-2 py-1.5">
+      <td className="px-3 py-3 text-sm">{genderLabel(victim.gender)}</td>
+      <td className="px-3 py-3">
         <VitalCell label="SpO2" value={victim.spo2} unit="%" stale={stale} />
       </td>
-      <td className="px-2 py-1.5">
+      <td className="px-3 py-3">
         <VitalCell label="HR" value={victim.hr} unit="bpm" stale={stale} />
       </td>
-      <td className="px-2 py-1.5">
+      <td className="px-3 py-3">
         <VitalCell label="RR" value={victim.rr} unit="/m" stale={stale} />
       </td>
-      <td className="px-2 py-1.5 font-mono text-xs tabular-nums">
+      <td className="px-3 py-3 font-mono text-sm tabular-nums">
         {formatBp(victim.bpSys, victim.bpDia)}
       </td>
-      <td className="px-2 py-1.5">
+      <td className="px-3 py-3">
         <VitalCell
           label="Bat"
           value={victim.battery}
@@ -111,18 +111,18 @@ function VictimRow({
           stale={stale}
         />
       </td>
-      <td className="max-w-[100px] truncate px-2 py-1.5 text-xs">
+      <td className="max-w-28 truncate px-3 py-3 text-sm">
         {nodeName}
       </td>
-      <td className="px-2 py-1.5">
+      <td className="px-3 py-3">
         <PriorityBadge priority={victim.currentPriority} />
       </td>
-      <td className="px-2 py-1.5 font-mono text-xs tabular-nums">
+      <td className="px-3 py-3 font-mono text-sm tabular-nums">
         {formatConfidence(victim.confidence)}
       </td>
-      <td className="px-2 py-1.5">
+      <td className="px-3 py-3">
         <div className="flex flex-col gap-0.5">
-          <span className="text-muted font-mono text-[11px] tabular-nums">
+          <span className="text-muted font-mono text-sm tabular-nums">
             {formatRelativeWib(victim.lastUpdate, now)}
           </span>
           <StaleIndicator lastUpdate={victim.lastUpdate} />
@@ -202,11 +202,8 @@ export function PasienContainer() {
     safePage * PAGE_SIZE + PAGE_SIZE
   );
 
-  useEffect(() => {
-    setPage(0);
-  }, [search, nodeId, priorities, redFirst]);
-
   function togglePriority(p: Priority) {
+    setPage(0);
     setPriorities((prev) => {
       const next = new Set(prev);
       if (next.has(p)) next.delete(p);
@@ -217,23 +214,23 @@ export function PasienContainer() {
 
   if (isLoading && !victims) {
     return (
-      <div data-testid="page-pasien" className="space-y-3">
+      <div data-testid="page-pasien" className="space-y-6 md:space-y-8">
         <header>
-          <h1 className="text-foreground text-xl font-semibold tracking-tight">
+          <h1 className="text-foreground text-2xl font-semibold tracking-tight">
             Daftar Pasien
           </h1>
-          <p className="text-muted mt-1 text-sm">Memuat data korban…</p>
+          <p className="text-muted mt-1 text-base">Memuat data korban…</p>
         </header>
-        <div className="border-border bg-card h-48 animate-pulse rounded-md border" />
+        <div className="border-border bg-card h-48 animate-pulse border" />
       </div>
     );
   }
 
   if (isError && !victims) {
     return (
-      <div data-testid="page-pasien" className="space-y-3">
+      <div data-testid="page-pasien" className="space-y-6 md:space-y-8">
         <header>
-          <h1 className="text-foreground text-xl font-semibold tracking-tight">
+          <h1 className="text-foreground text-2xl font-semibold tracking-tight">
             Daftar Pasien
           </h1>
         </header>
@@ -248,39 +245,45 @@ export function PasienContainer() {
   const emptyAll = !victims || victims.length === 0;
 
   return (
-    <div data-testid="page-pasien" className="space-y-3">
-      <header className="flex flex-wrap items-end justify-between gap-2">
+    <div data-testid="page-pasien" className="space-y-6 md:space-y-8">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-foreground text-xl font-semibold tracking-tight">
+          <h1 className="text-foreground text-2xl font-semibold tracking-tight">
             Daftar Pasien
           </h1>
-          <p className="text-muted mt-1 text-sm">
+          <p className="text-muted mt-1 text-base">
             Live triage · {filtered.length} hasil
             {victims ? ` / ${victims.length} total` : ''}
           </p>
         </div>
-        <label className="text-muted flex cursor-pointer items-center gap-2 text-xs">
+        <label className="text-muted flex min-h-11 cursor-pointer items-center gap-2 text-sm">
           <input
             type="checkbox"
             checked={redFirst}
-            onChange={(e) => setRedFirst(e.target.checked)}
-            className="accent-accent size-3.5"
+            onChange={(e) => {
+              setPage(0);
+              setRedFirst(e.target.checked);
+            }}
+            className="accent-accent size-4"
           />
-          RED dulu
+          Merah dulu
         </label>
       </header>
 
-      <div className="border-border bg-card flex flex-col gap-2 rounded-md border p-2.5 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="border-border bg-card flex flex-col gap-3 border p-4 sm:flex-row sm:flex-wrap sm:items-center">
         <input
           data-testid="filter-search"
           type="search"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setPage(0);
+            setSearch(e.target.value);
+          }}
           placeholder="Cari RFID / nama…"
-          className="border-border bg-background text-foreground placeholder:text-muted focus:border-accent h-8 min-w-[180px] flex-1 rounded-sm border px-2 text-sm outline-none"
+          className="border-border bg-background text-foreground placeholder:text-muted focus:border-accent min-h-11 min-w-0 flex-1 border px-3 text-sm outline-none sm:min-w-44"
         />
 
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
           {PRIORITIES.map((p) => {
             const active = priorities.has(p);
             return (
@@ -291,9 +294,9 @@ export function PasienContainer() {
                 data-active={active ? 'true' : 'false'}
                 onClick={() => togglePriority(p)}
                 className={cn(
-                  'border text-muted inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[11px] font-semibold tracking-wide uppercase transition-colors',
+                  'border text-muted hover:bg-control-hover inline-flex min-h-11 items-center gap-2 border-l-4 px-3 py-2 text-sm font-semibold transition-colors',
                   PRIORITY_CHIP[p],
-                  !active && 'hover:bg-background/60'
+                  !active && 'border-l-border'
                 )}
               >
                 {PRIORITY_LABELS[p]}
@@ -308,8 +311,11 @@ export function PasienContainer() {
         <select
           data-testid="filter-node"
           value={nodeId}
-          onChange={(e) => setNodeId(e.target.value)}
-          className="border-border bg-background text-foreground h-8 min-w-[140px] rounded-sm border px-2 text-xs outline-none"
+          onChange={(e) => {
+            setPage(0);
+            setNodeId(e.target.value);
+          }}
+          className="border-border bg-background text-foreground min-h-11 min-w-36 border px-3 text-sm outline-none"
         >
           <option value="">Semua node</option>
           {(nodes ?? []).map((n) => (
@@ -333,7 +339,7 @@ export function PasienContainer() {
               <Link
                 href="/perangkat"
                 data-testid="cta-perangkat"
-                className="bg-accent text-background inline-flex rounded-sm px-3 py-1.5 text-xs font-semibold"
+                className="bg-accent text-accent-foreground hover:opacity-90 inline-flex min-h-11 items-center px-4 text-sm font-semibold"
               >
                 Ke Perangkat
               </Link>
@@ -347,23 +353,23 @@ export function PasienContainer() {
         />
       ) : (
         <>
-          <div className="border-border overflow-x-auto rounded-md border">
+          <div className="border-border overflow-x-auto border">
             <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
               <thead className="bg-card sticky top-0 z-10">
-                <tr className="border-border text-muted border-b text-[10px] font-semibold tracking-wider uppercase">
-                  <th className="px-2 py-2">RFID</th>
-                  <th className="px-2 py-2">Nama</th>
-                  <th className="px-2 py-2">Usia</th>
-                  <th className="px-2 py-2">Gender</th>
-                  <th className="px-2 py-2">SpO2</th>
-                  <th className="px-2 py-2">HR</th>
-                  <th className="px-2 py-2">RR</th>
-                  <th className="px-2 py-2">BP</th>
-                  <th className="px-2 py-2">Battery</th>
-                  <th className="px-2 py-2">Node</th>
-                  <th className="px-2 py-2">Prioritas</th>
-                  <th className="px-2 py-2">Conf</th>
-                  <th className="px-2 py-2">Last Update</th>
+                <tr className="border-border text-muted border-b text-sm font-semibold">
+                  <th className="px-3 py-3">RFID</th>
+                  <th className="px-3 py-3">Nama</th>
+                  <th className="px-3 py-3">Usia</th>
+                  <th className="px-3 py-3">Gender</th>
+                  <th className="px-3 py-3">SpO2</th>
+                  <th className="px-3 py-3">HR</th>
+                  <th className="px-3 py-3">RR</th>
+                  <th className="px-3 py-3">BP</th>
+                  <th className="px-3 py-3">Battery</th>
+                  <th className="px-3 py-3">Node</th>
+                  <th className="px-3 py-3">Prioritas</th>
+                  <th className="px-3 py-3">Conf</th>
+                  <th className="px-3 py-3">Last Update</th>
                 </tr>
               </thead>
               <tbody>
@@ -375,7 +381,7 @@ export function PasienContainer() {
                       v.currentNodeId
                         ? (nodeNameById.get(v.currentNodeId) ??
                           v.currentNodeId)
-                        : '—'
+                        : '-'
                     }
                     now={now}
                   />
@@ -384,18 +390,18 @@ export function PasienContainer() {
             </table>
           </div>
 
-          <div className="text-muted flex items-center justify-between gap-2 text-xs">
+          <div className="text-muted flex flex-wrap items-center justify-between gap-3 text-sm">
             <span className="font-mono tabular-nums">
               {safePage * PAGE_SIZE + 1}–
               {Math.min((safePage + 1) * PAGE_SIZE, filtered.length)} /{' '}
               {filtered.length}
             </span>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 disabled={safePage <= 0}
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
-                className="border-border bg-card text-foreground disabled:text-muted rounded-sm border px-2.5 py-1 disabled:opacity-40"
+                className="border-border bg-card text-foreground hover:bg-control-hover disabled:text-muted min-h-11 border px-4 disabled:opacity-40"
               >
                 Prev
               </button>
@@ -408,7 +414,7 @@ export function PasienContainer() {
                 onClick={() =>
                   setPage((p) => Math.min(totalPages - 1, p + 1))
                 }
-                className="border-border bg-card text-foreground disabled:text-muted rounded-sm border px-2.5 py-1 disabled:opacity-40"
+                className="border-border bg-card text-foreground hover:bg-control-hover disabled:text-muted min-h-11 border px-4 disabled:opacity-40"
               >
                 Next
               </button>

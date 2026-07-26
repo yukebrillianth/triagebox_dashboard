@@ -14,13 +14,13 @@ export function ConfidenceBar({ value, className }: ConfidenceBarProps) {
   return (
     <div
       data-testid="confidence-bar"
-      className={cn('flex min-w-[4.5rem] flex-col gap-1', className)}
+      className={cn('flex min-w-24 flex-col gap-2', className)}
     >
-      <span className="text-muted tabular-nums text-[11px] font-medium">
+      <span className="text-muted tabular-nums text-sm font-medium">
         {formatConfidence(value)}
       </span>
       <div
-        className="bg-border h-1.5 w-full overflow-hidden rounded-full"
+        className="bg-border h-2 w-full overflow-hidden"
         role="progressbar"
         aria-valuenow={pct ?? 0}
         aria-valuemin={0}
@@ -28,7 +28,7 @@ export function ConfidenceBar({ value, className }: ConfidenceBarProps) {
         aria-label="Confidence"
       >
         <div
-          className="bg-accent h-full rounded-full transition-[width]"
+          className="bg-accent h-full transition-[width]"
           style={{ width: `${width}%` }}
         />
       </div>

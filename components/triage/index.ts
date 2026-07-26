@@ -10,6 +10,7 @@ export {
   genderLabel,
   ageRangeLabel,
   formatRelativeWib,
+  formatAbsoluteWib,
   formatBp,
   formatConfidence,
   normalizeConfidence,

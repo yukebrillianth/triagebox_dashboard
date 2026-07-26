@@ -133,7 +133,17 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
   const [connectionStatus, setConnectionStatus] =
     useState<ConnectionStatus>('connecting');
   const [lastBootstrapAt, setLastBootstrapAt] = useState<number | null>(null);
-  const [soundEnabled, setSoundEnabledState] = useState(true);
+  const [soundEnabled, setSoundEnabledState] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    try {
+      const raw = window.localStorage.getItem(SOUND_LS_KEY);
+      if (raw === 'false') return false;
+      if (raw === 'true') return true;
+    } catch {
+      /* ignore storage read */
+    }
+    return true;
+  });
   const [flashGen, setFlashGen] = useState(0);
 
   const flashMapRef = useRef(new Map<string, number>());
@@ -142,17 +152,10 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
   const everConnectedRef = useRef(false);
   const bootstrappingRef = useRef(false);
   const soundEnabledRef = useRef(soundEnabled);
-  soundEnabledRef.current = soundEnabled;
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(SOUND_LS_KEY);
-      if (raw === 'false') setSoundEnabledState(false);
-      else if (raw === 'true') setSoundEnabledState(true);
-    } catch {
-      /* ignore */
-    }
-  }, []);
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
 
   const setSoundEnabled = useCallback((v: boolean) => {
     setSoundEnabledState(v);
@@ -436,12 +439,13 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     };
     window.addEventListener('offline', onBrowserOffline);
     window.addEventListener('online', onBrowserOnline);
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-      setConnectionStatus('offline');
-    }
-
-    setConnectionStatus('connecting');
     void (async () => {
+      if (cancelled) return;
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        setConnectionStatus('offline');
+        return;
+      }
+      setConnectionStatus('connecting');
       try {
         await bootstrap();
       } catch (e) {

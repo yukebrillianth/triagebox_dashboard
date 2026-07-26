@@ -19,13 +19,13 @@ export function EmptyState({
     <div
       data-testid="empty-state"
       className={cn(
-        'border-border bg-card flex flex-col items-center justify-center gap-2 rounded-md border border-dashed px-6 py-12 text-center',
+        'border-border bg-card flex flex-col items-center justify-center gap-3 border border-dashed px-6 py-16 text-center',
         className
       )}
     >
-      <p className="text-foreground text-sm font-semibold">{title}</p>
+      <p className="text-foreground text-base font-semibold">{title}</p>
       {description ? (
-        <p className="text-muted max-w-sm text-xs leading-relaxed">
+        <p className="text-muted max-w-md text-sm leading-relaxed">
           {description}
         </p>
       ) : null}
