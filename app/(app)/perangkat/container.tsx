@@ -7,9 +7,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 
-import { EmptyState, formatRelativeWib } from '@/components/triage';
+import { EmptyState, VitalCell, formatRelativeWib } from '@/components/triage';
 import {
   Button,
+  Chip,
   Dialog,
   DialogFooter,
   Field,
@@ -39,13 +40,8 @@ import type { Node, OnlineStatus, Station } from '@/types';
 
 type Tab = 'station' | 'node';
 type StationDialog =
-  | { mode: 'create' }
-  | { mode: 'edit'; station: Station }
-  | null;
-type NodeDialog =
-  | { mode: 'create' }
-  | { mode: 'edit'; node: Node }
-  | null;
+  { mode: 'create' } | { mode: 'edit'; station: Station } | null;
+type NodeDialog = { mode: 'create' } | { mode: 'edit'; node: Node } | null;
 
 function StatusPill({ status }: { status: OnlineStatus | string }) {
   const online = status === 'ONLINE';
@@ -53,16 +49,14 @@ function StatusPill({ status }: { status: OnlineStatus | string }) {
     <span
       data-status={status}
       className={cn(
-        'inline-flex items-center gap-2 border-l-2 pl-2 text-sm font-semibold',
-        online
-          ? 'border-triage-green text-triage-green'
-          : 'border-border text-muted'
+        'inline-flex items-center gap-2 text-xs font-semibold',
+        online ? 'text-triage-green' : 'text-dim'
       )}
     >
       <span
         className={cn(
-          'size-2.5 shrink-0',
-          online ? 'bg-triage-green' : 'bg-muted'
+          'size-2 shrink-0',
+          online ? 'bg-triage-green' : 'bg-control-hover'
         )}
         aria-hidden
       />
@@ -90,7 +84,11 @@ function StationFormDialog({
   const isCreate = dialog.mode === 'create';
   const station = dialog.mode === 'edit' ? dialog.station : null;
 
-  const createForm = useForm<CreateStationFormValues, unknown, CreateStationForm>({
+  const createForm = useForm<
+    CreateStationFormValues,
+    unknown,
+    CreateStationForm
+  >({
     resolver: zodResolver(createStationSchema),
     defaultValues: {
       id: '',
@@ -624,9 +622,7 @@ export function PerangkatContainer() {
 
   async function handleDeleteStation(s: Station) {
     if (
-      !window.confirm(
-        `Nonaktifkan station "${s.name}" (${s.id})? Soft-delete.`
-      )
+      !window.confirm(`Nonaktifkan station "${s.name}" (${s.id})? Soft-delete.`)
     ) {
       return;
     }
@@ -667,80 +663,74 @@ export function PerangkatContainer() {
   const nodeRows = nodes ?? [];
 
   return (
-    <div data-testid="page-perangkat" className="space-y-6 md:space-y-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-foreground text-2xl font-semibold tracking-tight">
+    <div data-testid="page-perangkat" className="space-y-3.5">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-foreground text-xl font-semibold tracking-tight sm:text-2xl">
             Perangkat
           </h1>
-          <p className="text-muted mt-1 text-base">
+          <p className="text-muted mt-1 text-[0.8125rem] sm:text-sm">
             Station &amp; node lapangan · live status
           </p>
         </div>
-        <label className="text-muted flex min-h-11 cursor-pointer items-center gap-2 text-sm">
-          <input
-            type="checkbox"
+        <Chip
+          active={includeInactive}
+          aria-pressed={includeInactive}
+          onClick={() => setIncludeInactive((v) => !v)}
+        >
+          <span
             data-testid="toggle-include-inactive"
-            checked={includeInactive}
-            onChange={(e) => setIncludeInactive(e.target.checked)}
-            className="accent-accent size-4"
+            className={cn(
+              'inline-block size-2.5 shrink-0',
+              includeInactive ? 'bg-accent' : 'bg-control-hover'
+            )}
+            aria-hidden
           />
           Tampilkan nonaktif
-        </label>
+        </Chip>
       </header>
 
-      <div className="border-border bg-card flex flex-wrap items-center gap-2 border p-4">
-        <button
-          type="button"
+      <div className="bg-card rounded-card flex flex-wrap items-center gap-1.5 px-3.5 py-3">
+        <Chip
           data-testid="tab-station"
           data-active={tab === 'station' ? 'true' : 'false'}
+          active={tab === 'station'}
           onClick={() => setTab('station')}
-          className={cn(
-            'border-border text-muted hover:bg-control-hover hover:text-foreground inline-flex min-h-11 items-center border px-4 text-sm font-semibold transition-colors',
-            tab === 'station' &&
-              'border-accent bg-surface-muted text-accent'
-          )}
         >
           Station
-          <span className="ml-2 font-mono tabular-nums opacity-80">
+          <span className="font-mono tabular-nums opacity-70">
             {stationRows.length}
           </span>
-        </button>
-        <button
-          type="button"
+        </Chip>
+        <Chip
           data-testid="tab-node"
           data-active={tab === 'node' ? 'true' : 'false'}
+          active={tab === 'node'}
           onClick={() => setTab('node')}
-          className={cn(
-            'border-border text-muted hover:bg-control-hover hover:text-foreground inline-flex min-h-11 items-center border px-4 text-sm font-semibold transition-colors',
-            tab === 'node' && 'border-accent bg-surface-muted text-accent'
-          )}
         >
           Node
-          <span className="ml-2 font-mono tabular-nums opacity-80">
+          <span className="font-mono tabular-nums opacity-70">
             {nodeRows.length}
           </span>
-        </button>
+        </Chip>
       </div>
 
       {tab === 'station' ? (
-        <section className="space-y-4">
+        <section className="space-y-3.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-muted text-sm">
+            <p className="text-muted text-[0.8125rem]">
               Gateway MQTT · IP &amp; broker config
             </p>
-            <button
-              type="button"
+            <Button
               data-testid="btn-create-station"
               onClick={() => setStationDialog({ mode: 'create' })}
-              className="bg-accent text-accent-foreground hover:opacity-90 inline-flex min-h-11 items-center px-4 text-sm font-semibold transition-colors"
             >
               + Station
-            </button>
+            </Button>
           </div>
 
           {stationsLoading && !stations ? (
-            <div className="border-border bg-card h-40 animate-pulse border" />
+            <div className="bg-card rounded-card h-40 animate-pulse" />
           ) : stationsError && !stations ? (
             <EmptyState
               title="Gagal memuat station"
@@ -751,114 +741,119 @@ export function PerangkatContainer() {
               title="Belum ada station"
               description="Tambah station untuk mendaftarkan node lapangan."
               action={
-                <button
-                  type="button"
-                  onClick={() => setStationDialog({ mode: 'create' })}
-                  className="bg-accent text-accent-foreground hover:opacity-90 inline-flex min-h-11 items-center px-4 text-sm font-semibold"
-                >
+                <Button onClick={() => setStationDialog({ mode: 'create' })}>
                   Buat station
-                </button>
+                </Button>
               }
             />
           ) : (
-            <div className="border-border overflow-x-auto border">
-              <table className="w-full min-w-[960px] border-collapse text-left text-sm">
-                <thead className="bg-card sticky top-0 z-10">
-                  <tr className="border-border text-muted border-b text-sm font-semibold">
-                    <th className="px-3 py-3">ID</th>
-                    <th className="px-3 py-3">Nama</th>
-                    <th className="px-3 py-3">Status</th>
-                    <th className="px-3 py-3">IP</th>
-                    <th className="px-3 py-3">MQTT</th>
-                    <th className="px-3 py-3">Firmware</th>
-                    <th className="px-3 py-3">Last Seen</th>
-                    <th className="px-3 py-3">Nodes</th>
-                    <th className="px-3 py-3">Aktif</th>
-                    <th className="px-3 py-3 text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stationRows.map((s) => (
-                    <tr
-                      key={s.id}
-                      data-testid={`station-row-${s.id}`}
-                      className={cn(
-                        'border-border hover:bg-control-hover border-b',
-                        !s.isActive && 'opacity-50'
-                      )}
-                    >
-                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
-                        {s.id}
-                      </td>
-                      <td className="max-w-40 truncate px-3 py-3 text-sm">
-                        {s.name}
-                      </td>
-                      <td className="px-3 py-3">
-                        <StatusPill status={s.status} />
-                      </td>
-                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
-                        {s.ipAddress ?? '-'}
-                      </td>
-                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
-                        {mqttLabel(s)}
-                      </td>
-                      <td className="px-3 py-3 font-mono text-sm">
-                        {s.firmware ?? '-'}
-                      </td>
-                      <td className="text-muted px-3 py-3 font-mono text-sm tabular-nums">
-                        {formatRelativeWib(s.lastSeen, now)}
-                      </td>
-                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
-                        {s.nodeCount ?? 0}
-                      </td>
-                      <td className="px-3 py-3 text-sm">
-                        {s.isActive ? (
-                          <span className="text-triage-green">Ya</span>
-                        ) : (
-                          <span className="text-muted">Tidak</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-right">
-                        <div className="inline-flex items-center gap-2">
-                          <button
-                            type="button"
-                            data-testid={`btn-edit-station-${s.id}`}
-                            onClick={() =>
-                              setStationDialog({ mode: 'edit', station: s })
-                            }
-                            className="border-border bg-background text-foreground hover:border-accent hover:bg-control-hover min-h-11 border px-3 text-sm"
-                          >
-                            Edit
-                          </button>
-                          {s.isActive ? (
-                            <button
-                              type="button"
-                              data-testid={`btn-delete-station-${s.id}`}
-                              onClick={() => handleDeleteStation(s)}
-                              className="border-border text-muted hover:border-triage-red hover:bg-control-hover hover:text-triage-red min-h-11 border px-3 text-sm"
-                            >
-                              Hapus
-                            </button>
-                          ) : null}
-                        </div>
-                      </td>
+            <div className="bg-card rounded-card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[960px] border-collapse text-left">
+                  <thead className="bg-surface-header sticky top-0 z-10">
+                    <tr className="text-muted text-[0.6875rem] font-semibold tracking-[0.08em] uppercase">
+                      <th className="px-5 py-2.5 font-semibold">ID</th>
+                      <th className="px-3 py-2.5 font-semibold">Nama</th>
+                      <th className="px-3 py-2.5 font-semibold">Status</th>
+                      <th className="px-3 py-2.5 font-semibold">IP</th>
+                      <th className="px-3 py-2.5 font-semibold">MQTT</th>
+                      <th className="px-3 py-2.5 font-semibold">Firmware</th>
+                      <th className="px-3 py-2.5 font-semibold">Last Seen</th>
+                      <th className="px-3 py-2.5 text-right font-semibold">
+                        Nodes
+                      </th>
+                      <th className="px-3 py-2.5 font-semibold">Aktif</th>
+                      <th className="px-5 py-2.5 text-right font-semibold">
+                        Aksi
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {stationRows.map((s) => (
+                      <tr
+                        key={s.id}
+                        data-testid={`station-row-${s.id}`}
+                        className={cn(
+                          'border-border hover:bg-control-hover border-b last:border-b-0',
+                          !s.isActive && 'opacity-50'
+                        )}
+                      >
+                        <td className="text-foreground px-5 py-3 font-mono text-xs tabular-nums">
+                          {s.id}
+                        </td>
+                        <td className="text-foreground max-w-40 truncate px-3 py-3 text-[0.8125rem]">
+                          {s.name}
+                        </td>
+                        <td className="px-3 py-3">
+                          <StatusPill status={s.status} />
+                        </td>
+                        <td className="text-muted px-3 py-3 font-mono text-xs tabular-nums">
+                          {s.ipAddress ?? '-'}
+                        </td>
+                        <td className="text-muted px-3 py-3 font-mono text-xs tabular-nums">
+                          {mqttLabel(s)}
+                        </td>
+                        <td className="text-muted px-3 py-3 font-mono text-xs">
+                          {s.firmware ?? '-'}
+                        </td>
+                        <td className="text-muted px-3 py-3 font-mono text-xs tabular-nums">
+                          {formatRelativeWib(s.lastSeen, now)}
+                        </td>
+                        <td className="text-muted px-3 py-3 text-right font-mono text-xs tabular-nums">
+                          {s.nodeCount ?? 0}
+                        </td>
+                        <td className="px-3 py-3 text-xs">
+                          {s.isActive ? (
+                            <span className="text-triage-green">Ya</span>
+                          ) : (
+                            <span className="text-dim">Tidak</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <div className="inline-flex items-center gap-2">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              data-testid={`btn-edit-station-${s.id}`}
+                              onClick={() =>
+                                setStationDialog({ mode: 'edit', station: s })
+                              }
+                            >
+                              Edit
+                            </Button>
+                            {s.isActive ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                data-testid={`btn-delete-station-${s.id}`}
+                                onClick={() => handleDeleteStation(s)}
+                                className="text-muted hover:text-triage-red"
+                              >
+                                Hapus
+                              </Button>
+                            ) : null}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </section>
       ) : (
-        <section className="space-y-4">
+        <section className="space-y-3.5">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-              <p className="text-muted text-sm">Node LoRa · RSSI / SNR / bat</p>
-              <select
+              <p className="text-muted text-[0.8125rem]">
+                Node LoRa · RSSI / SNR / bat
+              </p>
+              <Select
                 data-testid="filter-node-station"
                 value={stationFilter}
                 onChange={(e) => setStationFilter(e.target.value)}
-                className="border-border bg-background text-foreground min-h-11 min-w-36 border px-3 text-sm outline-none"
+                className="min-w-36 sm:w-auto"
               >
                 <option value="">Semua station</option>
                 {(stations ?? activeStations ?? []).map((s) => (
@@ -866,20 +861,18 @@ export function PerangkatContainer() {
                     {s.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
-            <button
-              type="button"
+            <Button
               data-testid="btn-create-node"
               onClick={() => setNodeDialog({ mode: 'create' })}
-              className="bg-accent text-accent-foreground hover:opacity-90 inline-flex min-h-11 items-center px-4 text-sm font-semibold transition-colors"
             >
               + Node
-            </button>
+            </Button>
           </div>
 
           {nodesLoading && !nodes ? (
-            <div className="border-border bg-card h-40 animate-pulse border" />
+            <div className="bg-card rounded-card h-40 animate-pulse" />
           ) : nodesError && !nodes ? (
             <EmptyState
               title="Gagal memuat node"
@@ -890,119 +883,133 @@ export function PerangkatContainer() {
               title="Belum ada node"
               description="Daftarkan node di bawah station yang sudah ada."
               action={
-                <button
-                  type="button"
-                  onClick={() => setNodeDialog({ mode: 'create' })}
-                  className="bg-accent text-accent-foreground hover:opacity-90 inline-flex min-h-11 items-center px-4 text-sm font-semibold"
-                >
+                <Button onClick={() => setNodeDialog({ mode: 'create' })}>
                   Buat node
-                </button>
+                </Button>
               }
             />
           ) : (
-            <div className="border-border overflow-x-auto border">
-              <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
-                <thead className="bg-card sticky top-0 z-10">
-                  <tr className="border-border text-muted border-b text-sm font-semibold">
-                    <th className="px-3 py-3">ID</th>
-                    <th className="px-3 py-3">Station</th>
-                    <th className="px-3 py-3">Status</th>
-                    <th className="px-3 py-3">RSSI</th>
-                    <th className="px-3 py-3">SNR</th>
-                    <th className="px-3 py-3">Battery</th>
-                    <th className="px-3 py-3">Firmware</th>
-                    <th className="px-3 py-3">Packets</th>
-                    <th className="px-3 py-3">Last Seen</th>
-                    <th className="px-3 py-3">Victim</th>
-                    <th className="px-3 py-3">Aktif</th>
-                    <th className="px-3 py-3 text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {nodeRows.map((n) => (
-                    <tr
-                      key={n.id}
-                      data-testid={`node-row-${n.id}`}
-                      className={cn(
-                        'border-border hover:bg-control-hover border-b',
-                        !n.isActive && 'opacity-50'
-                      )}
-                    >
-                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
-                        <div className="flex flex-col">
-                          <span>{n.id}</span>
-                          <span className="text-muted truncate text-sm">
+            <div className="bg-card rounded-card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1100px] border-collapse text-left">
+                  <thead className="bg-surface-header sticky top-0 z-10">
+                    <tr className="text-muted text-[0.6875rem] font-semibold tracking-[0.08em] uppercase">
+                      <th className="px-5 py-2.5 font-semibold">ID</th>
+                      <th className="px-3 py-2.5 font-semibold">Station</th>
+                      <th className="px-3 py-2.5 font-semibold">Status</th>
+                      <th className="px-3 py-2.5 text-right font-semibold">
+                        RSSI
+                      </th>
+                      <th className="px-3 py-2.5 text-right font-semibold">
+                        SNR
+                      </th>
+                      <th className="px-3 py-2.5 text-right font-semibold">
+                        Bat
+                      </th>
+                      <th className="px-3 py-2.5 font-semibold">Firmware</th>
+                      <th className="px-3 py-2.5 text-right font-semibold">
+                        Packets
+                      </th>
+                      <th className="px-3 py-2.5 font-semibold">Last Seen</th>
+                      <th className="px-3 py-2.5 font-semibold">Victim</th>
+                      <th className="px-3 py-2.5 font-semibold">Aktif</th>
+                      <th className="px-5 py-2.5 text-right font-semibold">
+                        Aksi
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {nodeRows.map((n) => (
+                      <tr
+                        key={n.id}
+                        data-testid={`node-row-${n.id}`}
+                        className={cn(
+                          'border-border hover:bg-control-hover border-b last:border-b-0',
+                          !n.isActive && 'opacity-50'
+                        )}
+                      >
+                        <td className="px-5 py-3">
+                          <span className="text-foreground block font-mono text-xs tabular-nums">
+                            {n.id}
+                          </span>
+                          <span className="text-dim block truncate text-[0.6875rem]">
                             {n.name}
                           </span>
-                        </div>
-                      </td>
-                      <td className="max-w-32 truncate px-3 py-3 text-sm">
-                        {n.station?.name ??
-                          stationNameById.get(n.stationId) ??
-                          n.stationId}
-                      </td>
-                      <td className="px-3 py-3">
-                        <StatusPill status={n.status} />
-                      </td>
-                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
-                        {n.rssi == null ? '-' : n.rssi}
-                      </td>
-                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
-                        {n.snr == null ? '-' : n.snr}
-                      </td>
-                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
-                        {n.battery == null ? '-' : `${n.battery}%`}
-                      </td>
-                      <td className="px-3 py-3 font-mono text-sm">
-                        {n.firmware ?? '-'}
-                      </td>
-                      <td className="px-3 py-3 font-mono text-sm tabular-nums">
-                        {n.packetCount ?? 0}
-                      </td>
-                      <td className="text-muted px-3 py-3 font-mono text-sm tabular-nums">
-                        {formatRelativeWib(n.lastSeen, now)}
-                      </td>
-                      <td className="max-w-28 truncate px-3 py-3 font-mono text-sm tabular-nums">
-                        {n.currentVictimId ??
-                          n.currentVictim?.id ??
-                          n.currentVictim?.rfid ??
-                          '-'}
-                      </td>
-                      <td className="px-3 py-3 text-sm">
-                        {n.isActive ? (
-                          <span className="text-triage-green">Ya</span>
-                        ) : (
-                          <span className="text-muted">Tidak</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-right">
-                        <div className="inline-flex items-center gap-2">
-                          <button
-                            type="button"
-                            data-testid={`btn-edit-node-${n.id}`}
-                            onClick={() =>
-                              setNodeDialog({ mode: 'edit', node: n })
-                            }
-                            className="border-border bg-background text-foreground hover:border-accent hover:bg-control-hover min-h-11 border px-3 text-sm"
-                          >
-                            Edit
-                          </button>
+                        </td>
+                        <td className="text-muted max-w-32 truncate px-3 py-3 text-[0.8125rem]">
+                          {n.station?.name ??
+                            stationNameById.get(n.stationId) ??
+                            n.stationId}
+                        </td>
+                        <td className="px-3 py-3">
+                          <StatusPill status={n.status} />
+                        </td>
+                        <td className="text-muted px-3 py-3 text-right font-mono text-xs tabular-nums">
+                          {n.rssi == null ? '-' : n.rssi}
+                        </td>
+                        <td className="text-muted px-3 py-3 text-right font-mono text-xs tabular-nums">
+                          {n.snr == null ? '-' : n.snr}
+                        </td>
+                        <td className="px-3 py-3 text-right">
+                          <VitalCell
+                            label="Bat"
+                            value={n.battery}
+                            kind="battery"
+                            variant="inline"
+                          />
+                        </td>
+                        <td className="text-muted px-3 py-3 font-mono text-xs">
+                          {n.firmware ?? '-'}
+                        </td>
+                        <td className="text-muted px-3 py-3 text-right font-mono text-xs tabular-nums">
+                          {n.packetCount ?? 0}
+                        </td>
+                        <td className="text-muted px-3 py-3 font-mono text-xs tabular-nums">
+                          {formatRelativeWib(n.lastSeen, now)}
+                        </td>
+                        <td className="text-muted max-w-28 truncate px-3 py-3 font-mono text-xs tabular-nums">
+                          {n.currentVictimId ??
+                            n.currentVictim?.id ??
+                            n.currentVictim?.rfid ??
+                            '-'}
+                        </td>
+                        <td className="px-3 py-3 text-xs">
                           {n.isActive ? (
-                            <button
-                              type="button"
-                              data-testid={`btn-delete-node-${n.id}`}
-                              onClick={() => handleDeleteNode(n)}
-                              className="border-border text-muted hover:border-triage-red hover:bg-control-hover hover:text-triage-red min-h-11 border px-3 text-sm"
+                            <span className="text-triage-green">Ya</span>
+                          ) : (
+                            <span className="text-dim">Tidak</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <div className="inline-flex items-center gap-2">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              data-testid={`btn-edit-node-${n.id}`}
+                              onClick={() =>
+                                setNodeDialog({ mode: 'edit', node: n })
+                              }
                             >
-                              Hapus
-                            </button>
-                          ) : null}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                              Edit
+                            </Button>
+                            {n.isActive ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                data-testid={`btn-delete-node-${n.id}`}
+                                onClick={() => handleDeleteNode(n)}
+                                className="text-muted hover:text-triage-red"
+                              >
+                                Hapus
+                              </Button>
+                            ) : null}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </section>

@@ -5,10 +5,7 @@ import { useEffect, useState } from 'react';
 import { Menu, Moon, Sun, Volume2, VolumeX, X } from 'lucide-react';
 
 import { useSettings } from '@/hooks/use-api';
-import {
-  useRealtime,
-  type ConnectionStatus,
-} from '@/hooks/use-realtime';
+import { useRealtime, type ConnectionStatus } from '@/hooks/use-realtime';
 import { useTheme } from '@/hooks/use-theme';
 import { cn } from '@/lib/cn';
 
@@ -72,12 +69,8 @@ export function AppTopbar({
   onToggleMobileNav,
 }: AppTopbarProps) {
   const { data: settings } = useSettings();
-  const {
-    connectionStatus,
-    lastBootstrapAt,
-    soundEnabled,
-    setSoundEnabled,
-  } = useRealtime();
+  const { connectionStatus, lastBootstrapAt, soundEnabled, setSoundEnabled } =
+    useRealtime();
   const { theme, toggleTheme } = useTheme();
   const [now, setNow] = useState(() => Date.now());
 
@@ -93,7 +86,7 @@ export function AppTopbar({
   return (
     <header
       data-testid="app-topbar"
-      className="bg-card border-border print:hidden flex h-[var(--shell-header-height)] shrink-0 items-center gap-3 border-b px-3 sm:px-4 lg:px-6"
+      className="bg-surface-sidebar border-border flex h-[var(--shell-header-height)] shrink-0 items-center gap-3 border-b px-3 sm:px-4 lg:px-6 print:hidden"
     >
       <button
         type="button"
@@ -103,7 +96,7 @@ export function AppTopbar({
         aria-expanded={mobileNavOpen}
         aria-controls="app-sidebar"
         onClick={onToggleMobileNav}
-        className="hover:bg-control-hover text-foreground inline-flex size-11 shrink-0 items-center justify-center border border-transparent transition-colors lg:hidden"
+        className="rounded-control hover:bg-control-hover text-foreground inline-flex size-11 shrink-0 items-center justify-center transition-colors lg:hidden"
       >
         {mobileNavOpen ? (
           <X className="size-5" aria-hidden />
@@ -113,12 +106,12 @@ export function AppTopbar({
       </button>
 
       <div className="min-w-0 flex-1">
-        <p className="text-foreground truncate text-base font-semibold tracking-tight">
+        <p className="text-foreground truncate text-sm font-semibold tracking-tight">
           TriageBox
         </p>
         <p
           data-testid="topbar-context"
-          className="text-muted truncate text-xs leading-tight sm:text-sm"
+          className="text-muted truncate text-xs leading-tight"
         >
           {hospital}
           <span className="mx-1.5 opacity-40">·</span>
@@ -126,13 +119,13 @@ export function AppTopbar({
         </p>
       </div>
 
-      <div className="flex items-center gap-2 text-sm sm:gap-3">
+      <div className="flex items-center gap-2 text-xs sm:gap-3">
         <time
           id="wib-clock"
           data-testid="wib-clock"
           dateTime={new Date(now).toISOString()}
           title="Waktu Indonesia Barat"
-          className="text-foreground hidden min-w-[12.5rem] text-right text-xs font-medium tabular-nums sm:block sm:text-sm"
+          className="text-muted hidden min-w-[12.5rem] text-right font-medium tabular-nums sm:block"
         >
           {wibLabel} WIB
         </time>
@@ -140,13 +133,13 @@ export function AppTopbar({
         <span
           data-testid="connection-badge"
           className={cn(
-            'inline-flex items-center gap-2 font-medium',
+            'inline-flex items-center gap-2 font-semibold',
             connectionClass(connectionStatus)
           )}
         >
           <span
             className={cn(
-              'inline-block size-2.5 shrink-0',
+              'inline-block size-2 shrink-0',
               connectionStatus === 'connected' && 'bg-triage-green',
               connectionStatus === 'connecting' && 'bg-triage-yellow',
               connectionStatus === 'offline' && 'bg-triage-red'
@@ -167,7 +160,7 @@ export function AppTopbar({
           }
           aria-pressed={theme === 'dark'}
           onClick={toggleTheme}
-          className="hover:bg-control-hover text-foreground inline-flex size-11 items-center justify-center border border-transparent transition-colors"
+          className="rounded-control hover:bg-control-hover text-foreground inline-flex size-11 items-center justify-center transition-colors"
         >
           {theme === 'dark' ? (
             <Sun className="size-5" aria-hidden />
@@ -184,7 +177,7 @@ export function AppTopbar({
           aria-pressed={!soundEnabled}
           onClick={() => setSoundEnabled(!soundEnabled)}
           className={cn(
-            'hover:bg-control-hover inline-flex size-11 items-center justify-center border border-transparent transition-colors',
+            'rounded-control hover:bg-control-hover inline-flex size-11 items-center justify-center transition-colors',
             soundEnabled ? 'text-foreground' : 'text-muted'
           )}
         >
@@ -197,7 +190,7 @@ export function AppTopbar({
 
         <span
           data-testid="last-update"
-          className="text-muted hidden tabular-nums md:inline"
+          className="text-dim hidden tabular-nums md:inline"
           title={
             lastBootstrapAt
               ? new Date(lastBootstrapAt).toLocaleString('id-ID', {

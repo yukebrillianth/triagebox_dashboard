@@ -71,10 +71,7 @@ export function formatAbsoluteWib(
   }).format(new Date(t));
 }
 
-export function formatBp(
-  sys?: number | null,
-  dia?: number | null
-): string {
+export function formatBp(sys?: number | null, dia?: number | null): string {
   if (sys == null && dia == null) return '-';
   if (sys == null || dia == null) return '-';
   return `${sys}/${dia}`;
@@ -91,4 +88,28 @@ export function formatConfidence(c?: number | null): string {
   const pct = normalizeConfidence(c);
   if (pct == null) return '-';
   return `${Math.round(pct)}%`;
+}
+
+/** Tailwind text color for a vital, by clinical severity. Thresholds match the design. */
+export type VitalKind = 'spo2' | 'hr' | 'rr' | 'battery';
+
+const VITAL_THRESHOLDS: Record<
+  VitalKind,
+  { bad: (v: number) => boolean; warn: (v: number) => boolean }
+> = {
+  spo2: { bad: (v) => v < 90, warn: (v) => v < 95 },
+  hr: { bad: (v) => v > 120 || v < 50, warn: (v) => v > 100 },
+  rr: { bad: (v) => v > 24, warn: (v) => v > 20 },
+  battery: { bad: (v) => v <= 20, warn: (v) => v <= 40 },
+};
+
+export function vitalTone(
+  kind: VitalKind,
+  value: number | null | undefined
+): string {
+  if (value == null || Number.isNaN(value)) return 'text-dim';
+  const { bad, warn } = VITAL_THRESHOLDS[kind];
+  if (bad(value)) return 'text-triage-red';
+  if (warn(value)) return 'text-triage-yellow';
+  return kind === 'battery' ? 'text-triage-green' : 'text-foreground';
 }

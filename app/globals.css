@@ -3,53 +3,69 @@
 /* Class-based dark mode so theme toggle controls dark: utilities. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Light is a derived variant of the dark design: same hue family, darkened
+   accent/triage colors so small text keeps AA contrast on white. */
 :root {
   color-scheme: light;
-  --background: #f1f4f2;
-  --foreground: #111714;
+  --background: #f4f6fb;
+  --foreground: #0b1230;
   --card: #ffffff;
-  --surface-muted: #e4eae6;
-  --control-hover: #d8e1dc;
-  --border: #89968f;
-  --accent: #006b60;
+  --surface-sidebar: #ffffff;
+  --surface-header: #edf0f8;
+  --chip: #e7ebf6;
+  --surface-muted: #e7ebf6;
+  --control-hover: #dde3f1;
+  --border: #c3cadc;
+  --accent: #00723a;
   --accent-foreground: #ffffff;
-  --triage-red: #b42318;
-  --triage-yellow: #725800;
-  --triage-green: #11743c;
-  --triage-black: #171c19;
-  --muted: #4b5b52;
-  --focus: #006b60;
-  --backdrop: rgb(10 15 12 / 72%);
-  --shell-header-height: 4.5rem;
-  --shell-sidebar-width: 17rem;
-  --radius-control: 0.125rem;
+  --triage-red: #c0271f;
+  --triage-yellow: #7a5b00;
+  --triage-green: #00723a;
+  --triage-black: #171c2e;
+  --muted: #4c5675;
+  --dim: #6b7391;
+  --focus: #00723a;
+  --backdrop: rgb(11 18 48 / 60%);
+  --shell-header-height: 3.875rem;
+  --shell-sidebar-width: 14.75rem;
+  --radius-control: 0.625rem;
+  --radius-card: 0.875rem;
   --space-page: 1.5rem;
   --transition-fast: 150ms ease;
 }
 
+/* Palette of the Figma redesign. Accent green intentionally equals triage
+   GREEN — the design treats them as one color. */
 html.dark {
   color-scheme: dark;
-  --background: #0b100d;
-  --foreground: #f1f5f2;
-  --card: #141b17;
-  --surface-muted: #1c2620;
-  --control-hover: #27342d;
-  --border: #526158;
-  --accent: #58d6c2;
-  --accent-foreground: #07110e;
-  --triage-red: #ff766d;
-  --triage-yellow: #f2ca52;
-  --triage-green: #62dc91;
-  --triage-black: #dce3df;
-  --muted: #aebcb4;
-  --focus: #69e4cf;
-  --backdrop: rgb(0 0 0 / 78%);
+  --background: #000827;
+  --foreground: #eef1fa;
+  --card: #0e1738;
+  --surface-sidebar: #050d2c;
+  --surface-header: #0b1435;
+  --chip: #131f45;
+  --surface-muted: #131f45;
+  --control-hover: #1b2750;
+  --border: #141e44;
+  --accent: #00d460;
+  --accent-foreground: #041b10;
+  --triage-red: #fb2c36;
+  --triage-yellow: #e9c93f;
+  --triage-green: #00d460;
+  --triage-black: #c9d0ea;
+  --muted: #9aa3c4;
+  --dim: #6b769e;
+  --focus: #00d460;
+  --backdrop: rgb(0 4 20 / 80%);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
+  --color-surface-sidebar: var(--surface-sidebar);
+  --color-surface-header: var(--surface-header);
+  --color-chip: var(--chip);
   --color-surface-muted: var(--surface-muted);
   --color-control-hover: var(--control-hover);
   --color-border: var(--border);
@@ -60,8 +76,11 @@ html.dark {
   --color-triage-green: var(--triage-green);
   --color-triage-black: var(--triage-black);
   --color-muted: var(--muted);
+  --color-dim: var(--dim);
+  --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-mono-plex);
 }
 
 html {
@@ -81,14 +100,19 @@ body {
   line-height: 1.5;
   overflow-x: hidden;
   transition:
-    background-color var(--transition-fast), color var(--transition-fast);
+    background-color var(--transition-fast),
+    color var(--transition-fast);
 }
 
-button,
-input,
-select,
-textarea {
-  font: inherit;
+/* Layered so Tailwind's font-size utilities still win on controls. Unlayered
+   rules beat every @layer, which silently forced controls back to 16px. */
+@layer base {
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
 }
 
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
@@ -103,6 +127,31 @@ textarea {
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+/* Thin scrollbars so the dense lists in Command Center don't lose width. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--control-hover) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--control-hover);
+  border-radius: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--dim);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -139,7 +188,12 @@ textarea {
     --background: #ffffff !important;
     --foreground: #000000 !important;
     --card: #ffffff !important;
+    --surface-sidebar: #ffffff !important;
+    --surface-header: #f0f0f0 !important;
+    --chip: #f0f0f0 !important;
+    --surface-muted: #f0f0f0 !important;
     --muted: #333333 !important;
+    --dim: #333333 !important;
     --border: #000000 !important;
     background: #ffffff !important;
     color: #000000 !important;

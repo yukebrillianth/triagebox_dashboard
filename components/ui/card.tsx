@@ -6,17 +6,8 @@ export type CardProps = HTMLAttributes<HTMLElement> & {
   as?: 'section' | 'div' | 'article';
 };
 
-export function Card({
-  as: Comp = 'section',
-  className,
-  ...props
-}: CardProps) {
-  return (
-    <Comp
-      className={cn('border-border bg-card border', className)}
-      {...props}
-    />
-  );
+export function Card({ as: Comp = 'section', className, ...props }: CardProps) {
+  return <Comp className={cn('bg-card rounded-card', className)} {...props} />;
 }
 
 export type CardHeaderProps = HTMLAttributes<HTMLDivElement> & {
@@ -36,7 +27,7 @@ export function CardHeader({
   return (
     <div
       className={cn(
-        'border-border flex flex-wrap items-start justify-between gap-3 border-b px-4 py-3',
+        'border-border flex flex-wrap items-start justify-between gap-3 border-b px-5 py-4',
         className
       )}
       {...props}
@@ -45,7 +36,7 @@ export function CardHeader({
         <>
           <div className="min-w-0">
             {title ? (
-              <h2 className="text-foreground text-sm font-semibold tracking-tight">
+              <h2 className="text-foreground text-[0.9375rem] font-semibold tracking-tight">
                 {title}
               </h2>
             ) : null}
@@ -63,5 +54,5 @@ export function CardHeader({
 export type CardBodyProps = HTMLAttributes<HTMLDivElement>;
 
 export function CardBody({ className, ...props }: CardBodyProps) {
-  return <div className={cn('space-y-4 p-4', className)} {...props} />;
+  return <div className={cn('space-y-4 p-5', className)} {...props} />;
 }

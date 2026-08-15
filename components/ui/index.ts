@@ -12,6 +12,7 @@ export {
   type CardHeaderProps,
   type CardProps,
 } from './card';
+export { Chip, type ChipProps, type ChipTone } from './chip';
 export {
   Dialog,
   DialogFooter,

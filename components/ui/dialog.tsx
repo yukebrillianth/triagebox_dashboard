@@ -95,15 +95,15 @@ export function Dialog({
         aria-labelledby={titleId}
         aria-describedby={description ? descId : undefined}
         className={cn(
-          'border-border bg-card max-h-[90vh] w-full max-w-lg overflow-y-auto border',
+          'bg-card rounded-card max-h-[90vh] w-full max-w-lg overflow-y-auto',
           panelClassName
         )}
       >
-        <div className="border-border flex items-start justify-between gap-3 border-b px-4 py-3">
+        <div className="border-border flex items-start justify-between gap-3 border-b px-5 py-4">
           <div className="min-w-0">
             <h2
               id={titleId}
-              className="text-foreground text-base font-semibold tracking-tight"
+              className="text-foreground text-[0.9375rem] font-semibold"
             >
               {title}
             </h2>
@@ -127,7 +127,7 @@ export function Dialog({
             Tutup
           </Button>
         </div>
-        <div className="px-4 py-4">{children}</div>
+        <div className="px-5 py-4">{children}</div>
       </div>
     </div>
   );

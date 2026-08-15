@@ -14,4 +14,6 @@ export {
   formatBp,
   formatConfidence,
   normalizeConfidence,
+  vitalTone,
 } from './formatters';
+export type { VitalKind } from './formatters';

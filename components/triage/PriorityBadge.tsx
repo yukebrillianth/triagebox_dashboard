@@ -1,5 +1,5 @@
-import type { Priority } from '@/types';
 import { cn } from '@/lib/cn';
+import type { Priority } from '@/types';
 
 const LABELS: Record<Priority, string> = {
   RED: 'Merah',
@@ -8,37 +8,50 @@ const LABELS: Record<Priority, string> = {
   BLACK: 'Hitam',
 };
 
+/** Tinted pill per the design: tone-colored text on a 12% tint of the same tone. */
 const STYLES: Record<Priority, string> = {
-  RED: 'text-triage-red border-triage-red',
-  YELLOW: 'text-triage-yellow border-triage-yellow',
-  GREEN: 'text-triage-green border-triage-green',
-  BLACK: 'text-triage-black border-border',
+  RED: 'text-triage-red bg-triage-red/12',
+  YELLOW: 'text-triage-yellow bg-triage-yellow/12',
+  GREEN: 'text-triage-green bg-triage-green/12',
+  BLACK: 'text-triage-black bg-triage-black/12',
+};
+
+const DOTS: Record<Priority, string> = {
+  RED: 'bg-triage-red',
+  YELLOW: 'bg-triage-yellow',
+  GREEN: 'bg-triage-green',
+  BLACK: 'bg-triage-black',
 };
 
 type PriorityBadgeProps = {
   priority: Priority;
+  /** Larger variant for the detail header. */
+  size?: 'sm' | 'md';
   className?: string;
 };
 
-export function PriorityBadge({ priority, className }: PriorityBadgeProps) {
+export function PriorityBadge({
+  priority,
+  size = 'sm',
+  className,
+}: PriorityBadgeProps) {
   return (
     <span
       data-testid="priority-badge"
       data-priority={priority}
       className={cn(
-        'inline-flex items-center gap-2 border-l-2 px-2 py-1 text-sm font-semibold print:border-black print:text-black',
+        'inline-flex items-center gap-[7px] rounded-md font-semibold print:border print:border-black print:bg-transparent print:text-black',
+        size === 'sm'
+          ? 'px-2.5 py-[3px] text-[0.6875rem]'
+          : 'px-3.5 py-1.5 text-[0.8125rem]',
         STYLES[priority],
         className
       )}
     >
       <span
         className={cn(
-          'inline-block size-2.5 shrink-0 print:size-2',
-          priority === 'RED' && 'bg-triage-red',
-          priority === 'YELLOW' && 'bg-triage-yellow',
-          priority === 'GREEN' && 'bg-triage-green',
-          priority === 'BLACK' && 'bg-triage-black',
-          'print:bg-black'
+          'inline-block size-2 shrink-0 print:size-2 print:bg-black',
+          DOTS[priority]
         )}
         aria-hidden
       />

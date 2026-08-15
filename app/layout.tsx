@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist, IBM_Plex_Mono } from 'next/font/google';
 
 import { RedSoundListener } from '@/components/alerts';
 import { QueryProvider } from '@/providers/QueryProvider';
@@ -13,8 +13,9 @@ const geistSans = Geist({
   subsets: ['latin'],
 });
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+const plexMono = IBM_Plex_Mono({
+  variable: '--font-mono-plex',
+  weight: ['400', '500', '600'],
   subsets: ['latin'],
 });
 
@@ -50,7 +51,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
+        className={`${geistSans.variable} ${plexMono.variable} font-sans antialiased`}
       >
         <QueryProvider>
           <RealtimeProvider>

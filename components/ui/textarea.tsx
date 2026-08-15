@@ -14,9 +14,10 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         rows={rows}
         aria-invalid={invalid || undefined}
         className={cn(
-          'border-border bg-background text-foreground placeholder:text-muted min-h-20 w-full resize-y border px-3 py-2.5 text-sm',
-          'disabled:bg-surface-muted disabled:text-muted disabled:cursor-not-allowed',
-          invalid && 'border-triage-red',
+          'bg-surface-header text-foreground rounded-control min-h-20 w-full resize-y px-3 py-2.5 text-[0.8125rem] outline-none',
+          'focus:ring-accent/50 focus:ring-2 focus:ring-inset',
+          'disabled:text-dim disabled:cursor-not-allowed',
+          invalid && 'ring-triage-red ring-2 ring-inset',
           className
         )}
         {...props}

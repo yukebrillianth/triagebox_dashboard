@@ -57,12 +57,16 @@ pnpm test:e2e
 
 Playwright menjalankan server development dashboard secara otomatis di port `3000` bila belum aktif.
 
-## Prinsip Desain Anti-Slop
+## Prinsip Desain
 
-- Antarmuka command gelap, padat, dan mengutamakan keterbacaan operasional.
-- Teal adalah satu-satunya warna aksen; merah, kuning, hijau, dan hitam hanya dipakai untuk makna triase.
-- Tidak memakai purple glow, gradient dekoratif, atau Inter CDN.
-- Tipografi memakai Geist melalui `next/font`, tanpa permintaan font eksternal saat runtime.
+Dashboard mengikuti design Figma TriageBox. Palet dan token warna didefinisikan
+di `app/globals.css` — ubah token di sana, bukan warna hardcoded di komponen.
+
+- Antarmuka command gelap (navy `#000827`), padat, dan mengutamakan keterbacaan operasional.
+- Hijau `#00D460` adalah warna aksen sekaligus warna triase GREEN; design memperlakukan keduanya sebagai satu warna. Merah, kuning, dan hitam hanya dipakai untuk makna triase.
+- Mode terang adalah varian turunan dari palet gelap, dengan aksen/triase yang digelapkan agar teks kecil tetap kontras.
+- Tidak memakai purple glow atau gradient dekoratif.
+- Tipografi memakai Geist (sans) dan IBM Plex Mono (angka/ID) melalui `next/font`, tanpa permintaan font eksternal saat runtime.
 - Grafik memakai warna solid dan informasi penting tetap tersedia sebagai teks.
 
 ## Stack

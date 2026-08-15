@@ -58,7 +58,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onToggleMobileNav={toggleMobileNav}
         />
         <OfflineBanner />
-        <main className="min-h-0 flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+        <main className="min-h-0 flex-1 overflow-auto p-4 sm:p-5 lg:p-6">
           {children}
         </main>
       </div>

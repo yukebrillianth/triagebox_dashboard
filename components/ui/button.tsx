@@ -12,18 +12,18 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClass: Record<ButtonVariant, string> = {
   primary:
-    'border-accent bg-accent text-accent-foreground hover:opacity-90 disabled:border-border disabled:bg-surface-muted disabled:text-muted',
+    'bg-accent text-accent-foreground hover:opacity-90 disabled:bg-surface-muted disabled:text-muted',
   secondary:
-    'border-border bg-background text-foreground hover:bg-control-hover disabled:text-muted',
+    'bg-chip text-foreground hover:bg-control-hover disabled:text-muted',
   ghost:
-    'border-transparent bg-transparent text-foreground hover:bg-control-hover disabled:text-muted',
+    'bg-transparent text-foreground hover:bg-control-hover disabled:text-muted',
   danger:
-    'border-triage-red bg-triage-red text-accent-foreground hover:opacity-90 disabled:border-border disabled:bg-surface-muted disabled:text-muted',
+    'bg-triage-red text-white hover:opacity-90 disabled:bg-surface-muted disabled:text-muted',
 };
 
 const sizeClass: Record<ButtonSize, string> = {
-  md: 'min-h-11 px-4 text-sm',
-  sm: 'min-h-9 px-3 text-xs',
+  md: 'min-h-11 px-4 text-[0.8125rem]',
+  sm: 'min-h-9 px-3.5 text-xs',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -44,7 +44,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         type={type}
         disabled={disabled}
         className={cn(
-          'inline-flex items-center justify-center gap-2 border font-semibold transition-colors',
+          'rounded-control inline-flex items-center justify-center gap-2 font-semibold transition-colors',
           'disabled:cursor-not-allowed disabled:opacity-60',
           variantClass[variant],
           sizeClass[size],
