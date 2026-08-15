@@ -34,7 +34,9 @@ test.describe('design system and responsive shell', () => {
           '[data-testid="app-sidebar"] img'
         )
       );
-      const visible = imgs.find((img) => getComputedStyle(img).display !== 'none');
+      const visible = imgs.find(
+        (img) => getComputedStyle(img).display !== 'none'
+      );
       return visible?.getAttribute('src') ?? null;
     });
     expect(logoSrc).toBe(expectedLogo);
@@ -136,5 +138,52 @@ test.describe('design system and responsive shell', () => {
       printState.shellOverflow === 'visible' ||
         printState.shellOverflowY === 'visible'
     ).toBe(true);
+  });
+
+  test('gives every activatable control a pointer cursor', async ({ page }) => {
+    // Sweeps the interactive-heavy pages rather than trusting one component.
+    for (const path of ['/', '/pasien', '/alert', '/perangkat', '/settings']) {
+      await page.goto(path);
+      await expect(page.getByTestId('app-shell')).toBeVisible();
+
+      const wrong = await page.evaluate(() => {
+        const out: {
+          tag: string;
+          testid?: string;
+          text: string;
+          got: string;
+          want: string;
+        }[] = [];
+        const selector =
+          'button, a[href], [role="button"], select, summary,' +
+          ' input[type="checkbox"], input[type="radio"], label';
+        for (const el of document.querySelectorAll<HTMLElement>(selector)) {
+          const cs = getComputedStyle(el);
+          if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+          // A label only counts as activatable when it wraps a toggle; labels
+          // for text inputs keep the default cursor.
+          if (
+            el.tagName === 'LABEL' &&
+            !el.querySelector('input[type="checkbox"], input[type="radio"]')
+          ) {
+            continue;
+          }
+          const disabled = (el as HTMLButtonElement).disabled === true;
+          const want = disabled ? 'not-allowed' : 'pointer';
+          if (cs.cursor !== want) {
+            out.push({
+              tag: el.tagName,
+              testid: el.dataset.testid,
+              text: (el.textContent ?? '').trim().slice(0, 24),
+              got: cs.cursor,
+              want,
+            });
+          }
+        }
+        return out;
+      });
+
+      expect(wrong, `wrong cursor on ${path}`).toEqual([]);
+    }
   });
 });

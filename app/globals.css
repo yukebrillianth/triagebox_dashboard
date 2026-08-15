@@ -125,6 +125,20 @@ body {
   textarea {
     font: inherit;
   }
+
+  /* Anything activatable gets a pointer. Layered so a component can still opt
+     out with `cursor-not-allowed` or `cursor-default`. */
+  button:not(:disabled),
+  select:not(:disabled),
+  summary,
+  [role='button'],
+  input:not(:disabled):is([type='checkbox'], [type='radio']) {
+    cursor: pointer;
+  }
+
+  :disabled {
+    cursor: not-allowed;
+  }
 }
 
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {

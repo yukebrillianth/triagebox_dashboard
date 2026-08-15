@@ -16,7 +16,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         className={cn(
           'bg-surface-input text-foreground rounded-control min-h-20 w-full resize-y px-3 py-2.5 text-[0.8125rem] outline-none',
           'focus:ring-accent/50 focus:ring-2 focus:ring-inset',
-          'disabled:text-dim disabled:cursor-not-allowed',
+          'disabled:text-dim',
           invalid && 'ring-triage-red ring-2 ring-inset',
           className
         )}
