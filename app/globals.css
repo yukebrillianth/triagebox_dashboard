@@ -4,7 +4,10 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Light is a derived variant of the dark design: same hue family, darkened
-   accent/triage colors so small text keeps AA contrast on white. */
+   accent/triage colors so small text keeps AA contrast on white. The accent is
+   the logo teal deepened until it clears AA on white — the logo's own navy
+   (#111B4A) is only 1.12:1 against --foreground, so it would read as body text
+   rather than as an accent. */
 :root {
   color-scheme: light;
   --background: #f4f6fb;
@@ -18,7 +21,7 @@
   --surface-muted: #e7ebf6;
   --control-hover: #dde3f1;
   --border: #c3cadc;
-  --accent: #006e38;
+  --accent: #005f73;
   --accent-foreground: #ffffff;
   --triage-red: #c0271f;
   --triage-red-ink: #b3241d;
@@ -27,7 +30,7 @@
   --triage-black: #171c2e;
   --muted: #4c5675;
   --dim: #5d647e;
-  --focus: #006e38;
+  --focus: #005f73;
   --backdrop: rgb(11 18 48 / 60%);
   --shell-header-height: 3.875rem;
   --shell-sidebar-width: 14.75rem;
@@ -37,11 +40,12 @@
   --transition-fast: 150ms ease;
 }
 
-/* Palette of the Figma redesign. Accent green intentionally equals triage
-   GREEN — the design treats them as one color. `--triage-red` is the fill
-   (dots, bars, badges carrying white text); `--triage-red-ink` is the lifted
-   variant used when red is the text itself. One red cannot do both: reading on
-   the navy card needs luminance >= 0.22, while white-on-red needs <= 0.18. */
+/* Palette of the Figma redesign, with the accent taken from the TriageBox logo
+   (teal #79B2BB / navy #111B4A) instead of the design's green — that green now
+   means triage GREEN only. `--triage-red` is the fill (dots, bars, badges
+   carrying white text); `--triage-red-ink` is the lifted variant used when red
+   is the text itself. One red cannot do both: reading on the navy card needs
+   luminance >= 0.22, while white-on-red needs <= 0.18. */
 html.dark {
   color-scheme: dark;
   --background: #000827;
@@ -55,8 +59,8 @@ html.dark {
   --surface-muted: #131f45;
   --control-hover: #1b2750;
   --border: #141e44;
-  --accent: #00d460;
-  --accent-foreground: #041b10;
+  --accent: #79b2bb;
+  --accent-foreground: #00131a;
   --triage-red: #dd2730;
   --triage-red-ink: #ff4d57;
   --triage-yellow: #e9c93f;
@@ -64,7 +68,7 @@ html.dark {
   --triage-black: #c9d0ea;
   --muted: #9aa3c4;
   --dim: #818ebe;
-  --focus: #00d460;
+  --focus: #79b2bb;
   --backdrop: rgb(0 4 20 / 80%);
 }
 

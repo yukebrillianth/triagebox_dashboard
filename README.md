@@ -63,8 +63,8 @@ Dashboard mengikuti design Figma TriageBox. Palet dan token warna didefinisikan
 di `app/globals.css` — ubah token di sana, bukan warna hardcoded di komponen.
 
 - Antarmuka command gelap (navy `#000827`), padat, dan mengutamakan keterbacaan operasional.
-- Hijau `#00D460` adalah warna aksen sekaligus warna triase GREEN; design memperlakukan keduanya sebagai satu warna. Merah, kuning, dan hitam hanya dipakai untuk makna triase.
-- Mode terang adalah varian turunan dari palet gelap, dengan aksen/triase yang digelapkan agar teks kecil tetap kontras.
+- Warna aksen diambil dari logo TriageBox: teal `#79B2BB` di mode gelap, dan turunannya `#005F73` di mode terang. Hijau `#00D460` sekarang hanya berarti triase GREEN — begitu juga merah, kuning, dan hitam.
+- Mode terang adalah varian turunan dari palet gelap, dengan aksen/triase yang digelapkan agar teks kecil tetap kontras. Aksen terang tidak memakai navy `#111B4A` dari logo karena kontrasnya terhadap `--foreground` hanya 1.12:1 — akan terbaca sebagai teks biasa, bukan aksen.
 - Tidak memakai purple glow atau gradient dekoratif.
 - Tipografi memakai Geist (sans) dan IBM Plex Mono (angka/ID) melalui `next/font`, tanpa permintaan font eksternal saat runtime.
 - Grafik memakai warna solid dan informasi penting tetap tersedia sebagai teks.
