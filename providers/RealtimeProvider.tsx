@@ -350,7 +350,9 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
       const msg = alert.message || alert.type || 'Alert baru';
       if (alert.severity === 'CRITICAL') {
-        toast.error(msg, { duration: Infinity, id: alert.id });
+        // Not Infinity: a toast that never leaves stacks up until a reload.
+        // Alert Center is the durable record, the toast is only the nudge.
+        toast.error(msg, { duration: 12_000, id: alert.id });
       } else if (alert.severity === 'WARNING') {
         toast(msg, { duration: 4000, id: alert.id });
       } else {

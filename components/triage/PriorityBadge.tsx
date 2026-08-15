@@ -8,9 +8,12 @@ const LABELS: Record<Priority, string> = {
   BLACK: 'Hitam',
 };
 
-/** Tinted pill per the design: tone-colored text on a 12% tint of the same tone. */
+/**
+ * Tinted pill per the design: tone-colored text on a 12% tint of the same tone.
+ * RED takes the lifted ink so the text clears AA on its own tint.
+ */
 const STYLES: Record<Priority, string> = {
-  RED: 'text-triage-red bg-triage-red/12',
+  RED: 'text-triage-red-ink bg-triage-red/12',
   YELLOW: 'text-triage-yellow bg-triage-yellow/12',
   GREEN: 'text-triage-green bg-triage-green/12',
   BLACK: 'text-triage-black bg-triage-black/12',

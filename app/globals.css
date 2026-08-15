@@ -9,22 +9,25 @@
   color-scheme: light;
   --background: #f4f6fb;
   --foreground: #0b1230;
+  --foreground-soft: #2a3252;
   --card: #ffffff;
   --surface-sidebar: #ffffff;
   --surface-header: #edf0f8;
+  --surface-input: #e9edf7;
   --chip: #e7ebf6;
   --surface-muted: #e7ebf6;
   --control-hover: #dde3f1;
   --border: #c3cadc;
-  --accent: #00723a;
+  --accent: #006e38;
   --accent-foreground: #ffffff;
   --triage-red: #c0271f;
+  --triage-red-ink: #b3241d;
   --triage-yellow: #7a5b00;
-  --triage-green: #00723a;
+  --triage-green: #006e38;
   --triage-black: #171c2e;
   --muted: #4c5675;
-  --dim: #6b7391;
-  --focus: #00723a;
+  --dim: #5d647e;
+  --focus: #006e38;
   --backdrop: rgb(11 18 48 / 60%);
   --shell-header-height: 3.875rem;
   --shell-sidebar-width: 14.75rem;
@@ -35,26 +38,32 @@
 }
 
 /* Palette of the Figma redesign. Accent green intentionally equals triage
-   GREEN — the design treats them as one color. */
+   GREEN — the design treats them as one color. `--triage-red` is the fill
+   (dots, bars, badges carrying white text); `--triage-red-ink` is the lifted
+   variant used when red is the text itself. One red cannot do both: reading on
+   the navy card needs luminance >= 0.22, while white-on-red needs <= 0.18. */
 html.dark {
   color-scheme: dark;
   --background: #000827;
   --foreground: #eef1fa;
+  --foreground-soft: #c9d0ea;
   --card: #0e1738;
   --surface-sidebar: #050d2c;
   --surface-header: #0b1435;
+  --surface-input: #050d2c;
   --chip: #131f45;
   --surface-muted: #131f45;
   --control-hover: #1b2750;
   --border: #141e44;
   --accent: #00d460;
   --accent-foreground: #041b10;
-  --triage-red: #fb2c36;
+  --triage-red: #dd2730;
+  --triage-red-ink: #ff4d57;
   --triage-yellow: #e9c93f;
   --triage-green: #00d460;
   --triage-black: #c9d0ea;
   --muted: #9aa3c4;
-  --dim: #6b769e;
+  --dim: #818ebe;
   --focus: #00d460;
   --backdrop: rgb(0 4 20 / 80%);
 }
@@ -62,9 +71,11 @@ html.dark {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-foreground-soft: var(--foreground-soft);
   --color-card: var(--card);
   --color-surface-sidebar: var(--surface-sidebar);
   --color-surface-header: var(--surface-header);
+  --color-surface-input: var(--surface-input);
   --color-chip: var(--chip);
   --color-surface-muted: var(--surface-muted);
   --color-control-hover: var(--control-hover);
@@ -72,6 +83,7 @@ html.dark {
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-triage-red: var(--triage-red);
+  --color-triage-red-ink: var(--triage-red-ink);
   --color-triage-yellow: var(--triage-yellow);
   --color-triage-green: var(--triage-green);
   --color-triage-black: var(--triage-black);
@@ -187,11 +199,14 @@ textarea::placeholder {
     color-scheme: light !important;
     --background: #ffffff !important;
     --foreground: #000000 !important;
+    --foreground-soft: #000000 !important;
     --card: #ffffff !important;
     --surface-sidebar: #ffffff !important;
     --surface-header: #f0f0f0 !important;
+    --surface-input: #f0f0f0 !important;
     --chip: #f0f0f0 !important;
     --surface-muted: #f0f0f0 !important;
+    --triage-red-ink: #000000 !important;
     --muted: #333333 !important;
     --dim: #333333 !important;
     --border: #000000 !important;

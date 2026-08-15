@@ -13,11 +13,11 @@ export type ChipProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 /**
  * Filter chip used by the alert, pasien, and perangkat toolbars. Inactive chips
  * sit on the header surface; active chips take a tinted background and the tone
- * color for text.
+ * color for text. Red uses the lifted ink variant so tone-on-own-tint stays AA.
  */
 const activeClass: Record<ChipTone, string> = {
   accent: 'bg-accent/15 text-accent',
-  red: 'bg-triage-red/15 text-triage-red',
+  red: 'bg-triage-red/15 text-triage-red-ink',
   yellow: 'bg-triage-yellow/15 text-triage-yellow',
   green: 'bg-triage-green/15 text-triage-green',
   black: 'bg-triage-black/15 text-triage-black',
@@ -37,7 +37,7 @@ export const Chip = forwardRef<HTMLButtonElement, ChipProps>(function Chip(
         'rounded-control inline-flex h-11 items-center gap-2 px-3.5 text-[0.8125rem] font-semibold transition-colors sm:h-[38px]',
         active
           ? activeClass[tone]
-          : 'bg-surface-header text-muted hover:text-foreground',
+          : 'bg-surface-header text-foreground-soft hover:text-foreground',
         className
       )}
       {...props}

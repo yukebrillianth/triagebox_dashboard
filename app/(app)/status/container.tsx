@@ -42,22 +42,20 @@ function HealthCard({
   mono?: boolean;
 }) {
   return (
-    <div className="border-border bg-card border px-4 py-5">
-      <p className="text-muted text-sm font-medium">
-        {label}
-      </p>
-      <p
+    <div className="bg-card rounded-card flex flex-col gap-2.5 p-5">
+      <span className="text-muted text-[0.8125rem]">{label}</span>
+      <span
         data-testid={testId}
         className={cn(
-          'mt-3 text-3xl font-semibold tracking-tight',
+          'text-[1.625rem] leading-none font-semibold',
           mono && 'font-mono tabular-nums',
           tone === 'ok' && 'text-triage-green',
-          tone === 'bad' && 'text-triage-red',
+          tone === 'bad' && 'text-triage-red-ink',
           tone === 'neutral' && 'text-foreground'
         )}
       >
         {value}
-      </p>
+      </span>
     </div>
   );
 }
@@ -70,19 +68,18 @@ export function StatusContainer() {
 
   if (isLoading && !data) {
     return (
-      <div data-testid="page-status" className="space-y-6 md:space-y-8">
+      <div data-testid="page-status" className="space-y-3.5">
         <header>
-          <h1 className="text-foreground text-2xl font-semibold tracking-tight">
+          <h1 className="text-foreground text-xl font-semibold tracking-tight sm:text-2xl">
             Status
           </h1>
-          <p className="text-muted mt-1 text-base">Memuat health backend…</p>
+          <p className="text-muted mt-1 text-[0.8125rem] sm:text-sm">
+            Memuat health backend…
+          </p>
         </header>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+        <div className="grid grid-cols-2 gap-3.5 md:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="border-border bg-card h-28 animate-pulse border"
-            />
+            <div key={i} className="bg-card rounded-card h-28 animate-pulse" />
           ))}
         </div>
       </div>
@@ -91,9 +88,9 @@ export function StatusContainer() {
 
   if (isError && !data) {
     return (
-      <div data-testid="page-status" className="space-y-6 md:space-y-8">
+      <div data-testid="page-status" className="space-y-3.5">
         <header>
-          <h1 className="text-foreground text-2xl font-semibold tracking-tight">
+          <h1 className="text-foreground text-xl font-semibold tracking-tight sm:text-2xl">
             Status
           </h1>
         </header>
@@ -104,7 +101,7 @@ export function StatusContainer() {
             <button
               type="button"
               onClick={() => refetch()}
-              className="bg-accent text-accent-foreground hover:opacity-90 inline-flex min-h-11 items-center px-4 text-sm font-semibold"
+              className="bg-accent text-accent-foreground rounded-control inline-flex min-h-11 items-center px-4 text-sm font-semibold hover:opacity-90"
             >
               Coba lagi
             </button>
@@ -135,13 +132,13 @@ export function StatusContainer() {
       : '-';
 
   return (
-    <div data-testid="page-status" className="space-y-6 md:space-y-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-foreground text-2xl font-semibold tracking-tight">
+    <div data-testid="page-status" className="space-y-3.5">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-foreground text-xl font-semibold tracking-tight sm:text-2xl">
             Status
           </h1>
-          <p className="text-muted mt-1 text-base">
+          <p className="text-muted mt-1 text-[0.8125rem] sm:text-sm">
             Health backend · DB · MQTT · uptime
           </p>
         </div>
@@ -149,10 +146,10 @@ export function StatusContainer() {
           <span
             data-testid="health-overall"
             className={cn(
-              'inline-flex min-h-11 items-center gap-2 border-l-2 pl-3 text-sm font-semibold',
+              'inline-flex min-h-11 items-center gap-2 border-l-2 pl-3 text-[0.8125rem] font-semibold sm:min-h-0',
               overallOk
                 ? 'border-triage-green text-triage-green'
-                : 'border-triage-red text-triage-red'
+                : 'border-triage-red text-triage-red-ink'
             )}
           >
             <span
@@ -169,7 +166,7 @@ export function StatusContainer() {
             data-testid="btn-refresh-health"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="border-border bg-background text-foreground hover:border-accent hover:bg-control-hover disabled:text-muted min-h-11 border px-4 text-sm font-medium disabled:opacity-50"
+            className="bg-chip text-foreground-soft hover:text-accent rounded-control h-11 px-4 text-[0.8125rem] font-medium transition-colors disabled:opacity-50 sm:h-[38px]"
           >
             {isFetching ? 'Memuat…' : 'Refresh'}
           </button>
@@ -178,7 +175,7 @@ export function StatusContainer() {
 
       <section
         aria-label="Health cards"
-        className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4"
+        className="grid grid-cols-2 gap-3.5 md:grid-cols-4"
       >
         <HealthCard
           label="Status"
@@ -207,32 +204,28 @@ export function StatusContainer() {
         />
       </section>
 
-      <section className="border-border bg-card border p-4 md:p-6">
-        <h2 className="text-foreground text-base font-semibold tracking-tight">
+      <section className="bg-card rounded-card flex flex-col gap-4 p-[22px]">
+        <h2 className="text-foreground text-[0.9375rem] font-semibold">
           Detail
         </h2>
-        <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="border-border flex items-center justify-between gap-3 border px-4 py-3">
-            <dt className="text-muted text-sm">
-              Uptime (detik)
-            </dt>
+        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="bg-surface-input rounded-control flex items-center justify-between gap-4 px-4 py-3.5">
+            <dt className="text-muted text-[0.8125rem]">Uptime (detik)</dt>
             <dd
               data-testid="health-uptime-sec"
-              className="text-foreground font-mono text-base tabular-nums"
+              className="text-foreground font-mono text-sm tabular-nums"
             >
               {uptimeSec == null ? '-' : Math.floor(uptimeSec)}
             </dd>
           </div>
-          <div className="border-border flex items-center justify-between gap-3 border px-4 py-3">
-            <dt className="text-muted text-sm">
-              Cek terakhir (WIB)
-            </dt>
-            <dd className="text-foreground font-mono text-base tabular-nums">
+          <div className="bg-surface-input rounded-control flex items-center justify-between gap-4 px-4 py-3.5">
+            <dt className="text-muted text-[0.8125rem]">Cek terakhir (WIB)</dt>
+            <dd className="text-foreground font-mono text-sm tabular-nums">
               {lastCheck}
             </dd>
           </div>
         </dl>
-        <p className="text-muted mt-4 text-sm leading-relaxed">
+        <p className="text-muted text-[0.8125rem] leading-relaxed">
           Hanya menampilkan status, db, mqtt, dan uptime dari{' '}
           <code className="text-accent font-mono">/api/health</code>. Tidak ada
           metrik CPU/disk.

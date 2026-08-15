@@ -22,7 +22,7 @@ const ACKED_OPTS: { value: AckedFilter; label: string }[] = [
 ];
 
 const SEV_TEXT: Record<string, string> = {
-  CRITICAL: 'text-triage-red',
+  CRITICAL: 'text-triage-red-ink',
   WARNING: 'text-triage-yellow',
   INFO: 'text-muted',
 };
@@ -186,7 +186,7 @@ export function AlertContainer() {
 
       {isError ? (
         <div className="bg-triage-red/10 rounded-card px-4 py-3">
-          <p className="text-triage-red text-sm font-semibold">
+          <p className="text-triage-red-ink text-sm font-semibold">
             Gagal memuat alert
             {error?.message ? `: ${error.message}` : ''}
           </p>
@@ -229,7 +229,9 @@ export function AlertContainer() {
                     data-acked={alert.acknowledged ? 'true' : 'false'}
                     className={cn(
                       'border-border border-b last:border-b-0',
-                      alert.acknowledged && 'opacity-55'
+                      // Acked rows read as secondary via the "Acked" cell and
+                      // the dot color; opacity here dropped them below AA.
+                      alert.acknowledged && 'bg-surface-header/40'
                     )}
                   >
                     <td className="px-5 py-3">

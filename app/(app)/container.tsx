@@ -28,7 +28,7 @@ const TRIAGE_LABELS: Record<Priority, string> = {
 };
 
 const TRIAGE_TEXT: Record<Priority, string> = {
-  RED: 'text-triage-red',
+  RED: 'text-triage-red-ink',
   YELLOW: 'text-triage-yellow',
   GREEN: 'text-triage-green',
   BLACK: 'text-triage-black',
@@ -400,7 +400,7 @@ function NodeSummary({
           <span className="text-muted text-[0.8125rem]">Node offline</span>
           <span
             data-testid="nodes-offline"
-            className="text-triage-red font-mono text-[1.625rem] leading-none font-semibold tabular-nums"
+            className="text-triage-red-ink font-mono text-[1.625rem] leading-none font-semibold tabular-nums"
           >
             {Math.max(0, totalNodes - onlineNodes)}
           </span>
@@ -557,10 +557,10 @@ export function BerandaContainer() {
         >
           <div className="flex min-w-0 items-center gap-2.5">
             <TriangleAlert
-              className="text-triage-red size-[18px] shrink-0"
+              className="text-triage-red-ink size-[18px] shrink-0"
               aria-hidden
             />
-            <p className="text-triage-red text-[0.9375rem] font-semibold">
+            <p className="text-triage-red-ink text-[0.9375rem] font-semibold">
               {criticalUnacked.length} alert CRITICAL belum di-ack
             </p>
           </div>

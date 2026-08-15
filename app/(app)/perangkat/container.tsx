@@ -775,7 +775,9 @@ export function PerangkatContainer() {
                         data-testid={`station-row-${s.id}`}
                         className={cn(
                           'border-border hover:bg-control-hover border-b last:border-b-0',
-                          !s.isActive && 'opacity-50'
+                          // Inactive is stated in the "Aktif" column; opacity
+                          // here pushed the row text below AA.
+                          !s.isActive && 'bg-surface-header/40'
                         )}
                       >
                         <td className="text-foreground px-5 py-3 font-mono text-xs tabular-nums">
@@ -827,7 +829,7 @@ export function PerangkatContainer() {
                                 size="sm"
                                 data-testid={`btn-delete-station-${s.id}`}
                                 onClick={() => handleDeleteStation(s)}
-                                className="text-muted hover:text-triage-red"
+                                className="text-muted hover:text-triage-red-ink"
                               >
                                 Hapus
                               </Button>
@@ -925,7 +927,9 @@ export function PerangkatContainer() {
                         data-testid={`node-row-${n.id}`}
                         className={cn(
                           'border-border hover:bg-control-hover border-b last:border-b-0',
-                          !n.isActive && 'opacity-50'
+                          // Inactive is stated in the "Aktif" column; opacity
+                          // here pushed the row text below AA.
+                          !n.isActive && 'bg-surface-header/40'
                         )}
                       >
                         <td className="px-5 py-3">
@@ -998,7 +1002,7 @@ export function PerangkatContainer() {
                                 size="sm"
                                 data-testid={`btn-delete-node-${n.id}`}
                                 onClick={() => handleDeleteNode(n)}
-                                className="text-muted hover:text-triage-red"
+                                className="text-muted hover:text-triage-red-ink"
                               >
                                 Hapus
                               </Button>

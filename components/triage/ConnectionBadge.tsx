@@ -25,7 +25,7 @@ function connectionClass(status: ConnectionBadgeStatus): string {
     case 'connecting':
       return 'text-triage-yellow';
     case 'offline':
-      return 'text-triage-red';
+      return 'text-triage-red-ink';
   }
 }
 

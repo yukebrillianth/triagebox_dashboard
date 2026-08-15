@@ -109,7 +109,7 @@ export function vitalTone(
 ): string {
   if (value == null || Number.isNaN(value)) return 'text-dim';
   const { bad, warn } = VITAL_THRESHOLDS[kind];
-  if (bad(value)) return 'text-triage-red';
+  if (bad(value)) return 'text-triage-red-ink';
   if (warn(value)) return 'text-triage-yellow';
   return kind === 'battery' ? 'text-triage-green' : 'text-foreground';
 }

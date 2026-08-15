@@ -3,13 +3,12 @@
 import { useMemo, type ReactNode } from 'react';
 
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   Legend,
-  Line,
-  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -42,7 +41,7 @@ const PRIORITIES: Priority[] = ['RED', 'YELLOW', 'GREEN', 'BLACK'];
 const CHART_TOOLTIP = {
   background: 'var(--card)',
   border: '1px solid var(--border)',
-  borderRadius: 4,
+  borderRadius: 8,
   fontSize: 13,
   color: 'var(--foreground)',
 };
@@ -66,7 +65,7 @@ function batteryBarColor(pct: number | null): string {
 
 function batteryTextClass(pct: number | null): string {
   if (pct == null) return 'text-muted';
-  if (pct <= 20) return 'text-triage-red';
+  if (pct <= 20) return 'text-triage-red-ink';
   if (pct <= 40) return 'text-triage-yellow';
   return 'text-triage-green';
 }
@@ -85,9 +84,9 @@ function Panel({
   return (
     <section
       data-testid={testId}
-      className={cn('border-border bg-card border p-4 md:p-6', className)}
+      className={cn('bg-card rounded-card p-4 sm:p-5', className)}
     >
-      <h2 className="text-foreground text-base font-semibold tracking-tight">
+      <h2 className="text-foreground text-[0.9375rem] font-semibold">
         {title}
       </h2>
       <div className="mt-4">{children}</div>
@@ -98,6 +97,7 @@ function Panel({
 export function AnalyticsContainer() {
   const { data, isLoading, isError } = useAnalytics();
 
+  // Recharts 3 reads `fill` off each datum; `<Cell>` is deprecated.
   const priorityPie = useMemo(() => {
     const bp = data?.byPriority;
     if (!bp) return [];
@@ -105,7 +105,7 @@ export function AnalyticsContainer() {
       key: p,
       name: TRIAGE_LABELS[p],
       value: bp[p] ?? 0,
-      color: TRIAGE_COLORS[p],
+      fill: TRIAGE_COLORS[p],
     })).filter((d) => d.value > 0);
   }, [data?.byPriority]);
 
@@ -116,7 +116,7 @@ export function AnalyticsContainer() {
       key: p,
       name: TRIAGE_LABELS[p],
       value: bp[p] ?? 0,
-      color: TRIAGE_COLORS[p],
+      fill: TRIAGE_COLORS[p],
     }));
   }, [data?.byPriority]);
 
@@ -143,19 +143,18 @@ export function AnalyticsContainer() {
 
   if (isLoading && !data) {
     return (
-      <div data-testid="page-analytics" className="space-y-6 md:space-y-8">
+      <div data-testid="page-analytics" className="space-y-3.5">
         <header>
-          <h1 className="text-foreground text-2xl font-semibold tracking-tight">
+          <h1 className="text-foreground text-xl font-semibold tracking-tight sm:text-2xl">
             Analytics
           </h1>
-          <p className="text-muted mt-1 text-base">Memuat ringkasan…</p>
+          <p className="text-muted mt-1 text-[0.8125rem] sm:text-sm">
+            Memuat ringkasan…
+          </p>
         </header>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="border-border bg-card h-60 animate-pulse border"
-            />
+            <div key={i} className="bg-card rounded-card h-60 animate-pulse" />
           ))}
         </div>
       </div>
@@ -164,9 +163,9 @@ export function AnalyticsContainer() {
 
   if (isError && !data) {
     return (
-      <div data-testid="page-analytics" className="space-y-6 md:space-y-8">
+      <div data-testid="page-analytics" className="space-y-3.5">
         <header>
-          <h1 className="text-foreground text-2xl font-semibold tracking-tight">
+          <h1 className="text-foreground text-xl font-semibold tracking-tight sm:text-2xl">
             Analytics
           </h1>
         </header>
@@ -186,48 +185,44 @@ export function AnalyticsContainer() {
       : `${Math.round(avgBattery)}%`;
 
   return (
-    <div data-testid="page-analytics" className="space-y-6 md:space-y-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-foreground text-2xl font-semibold tracking-tight">
+    <div data-testid="page-analytics" className="space-y-3.5">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-foreground text-xl font-semibold tracking-tight sm:text-2xl">
             Analytics
           </h1>
-          <p className="text-muted mt-1 text-base">
+          <p className="text-muted mt-1 text-[0.8125rem] sm:text-sm">
             Ringkasan 24 jam · data live API
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <div className="border-border bg-card border px-4 py-3">
-            <p className="text-muted text-sm font-medium">
-              Node online
-            </p>
-            <p
+          <div className="bg-card rounded-card flex flex-col gap-[3px] px-[18px] py-3">
+            <span className="text-muted text-[0.6875rem]">Node online</span>
+            <span
               data-testid="analytics-active-nodes"
-              className="text-triage-green font-mono text-2xl font-semibold tabular-nums"
+              className="text-triage-green font-mono text-[1.375rem] leading-none font-semibold tabular-nums"
             >
               {activeNodes}
-            </p>
+            </span>
           </div>
-          <div className="border-border bg-card border px-4 py-3">
-            <p className="text-muted text-sm font-medium">
-              Avg battery
-            </p>
-            <p
+          <div className="bg-card rounded-card flex flex-col gap-[3px] px-[18px] py-3">
+            <span className="text-muted text-[0.6875rem]">Avg battery</span>
+            <span
               data-testid="analytics-avg-battery"
               className={cn(
-                'font-mono text-2xl font-semibold tabular-nums',
+                'font-mono text-[1.375rem] leading-none font-semibold tabular-nums',
                 batteryTextClass(
                   avgBattery == null ? null : Math.round(avgBattery)
                 )
               )}
             >
               {avgLabel}
-            </p>
+            </span>
           </div>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <Panel
           title="Distribusi prioritas"
           testId="chart-priority-pie"
@@ -250,24 +245,21 @@ export function AnalyticsContainer() {
                     innerRadius={52}
                     outerRadius={78}
                     paddingAngle={2}
-                    stroke="var(--border)"
-                    strokeWidth={1}
-                  >
-                    {priorityPie.map((entry) => (
-                      <Cell key={entry.key} fill={entry.color} fillOpacity={1} />
-                    ))}
-                  </Pie>
+                    stroke="var(--card)"
+                    strokeWidth={2}
+                  />
                   <Tooltip
                     contentStyle={CHART_TOOLTIP}
                     itemStyle={{ color: 'var(--foreground)' }}
                     formatter={(value) => [String(value ?? 0), 'Jumlah']}
                   />
                   <Legend
-                    verticalAlign="bottom"
                     height={28}
                     iconType="square"
                     formatter={(value) => (
-                      <span className="text-muted text-sm">{value}</span>
+                      <span className="text-foreground-soft text-[0.8125rem]">
+                        {value}
+                      </span>
                     )}
                   />
                 </PieChart>
@@ -316,11 +308,7 @@ export function AnalyticsContainer() {
                     cursor={{ fill: 'var(--border)', opacity: 0.35 }}
                     formatter={(value) => [String(value ?? 0), 'Jumlah']}
                   />
-                  <Bar dataKey="value" radius={[0, 0, 0, 0]} maxBarSize={48}>
-                    {priorityBar.map((entry) => (
-                      <Cell key={entry.key} fill={entry.color} fillOpacity={1} />
-                    ))}
-                  </Bar>
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={48} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -328,38 +316,37 @@ export function AnalyticsContainer() {
         </Panel>
 
         <Panel
-          title="Tren vital 24 jam"
+          title="Tren pembacaan vital 24 jam"
           testId="chart-hourly-trend"
           className="lg:col-span-12"
         >
-          <div className="h-64 w-full">
+          <div className="h-[210px] w-full">
             {hourly.length === 0 ? (
               <p className="text-muted flex h-full items-center justify-center text-sm">
                 Tidak ada tren jam
               </p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart
+                <AreaChart
                   data={hourly}
                   margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
                 >
                   <CartesianGrid
-                    stroke="var(--border)"
-                    strokeDasharray="3 3"
+                    stroke="var(--control-hover)"
                     vertical={false}
                   />
                   <XAxis
                     dataKey="label"
-                    tick={{ fill: 'var(--muted)', fontSize: 12 }}
-                    axisLine={{ stroke: 'var(--border)' }}
+                    tick={{ fill: 'var(--dim)', fontSize: 11 }}
+                    axisLine={false}
                     tickLine={false}
                     interval="preserveStartEnd"
                     minTickGap={28}
                   />
                   <YAxis
                     allowDecimals={false}
-                    tick={{ fill: 'var(--muted)', fontSize: 12 }}
-                    axisLine={{ stroke: 'var(--border)' }}
+                    tick={{ fill: 'var(--dim)', fontSize: 11 }}
+                    axisLine={false}
                     tickLine={false}
                     width={36}
                   />
@@ -368,8 +355,7 @@ export function AnalyticsContainer() {
                     itemStyle={{ color: 'var(--foreground)' }}
                     labelFormatter={(_, payload) => {
                       const row = payload?.[0]?.payload as
-                        | { hour?: string; label?: string }
-                        | undefined;
+                        { hour?: string; label?: string } | undefined;
                       if (!row?.hour) return row?.label ?? '';
                       return new Date(row.hour).toLocaleString('id-ID', {
                         timeZone: 'Asia/Jakarta',
@@ -381,15 +367,18 @@ export function AnalyticsContainer() {
                     }}
                     formatter={(value) => [String(value ?? 0), 'Pembacaan']}
                   />
-                  <Line
+                  {/* Design fills under the line at 10% accent. */}
+                  <Area
                     type="monotone"
                     dataKey="count"
                     stroke="var(--accent)"
                     strokeWidth={2}
+                    fill="var(--accent)"
+                    fillOpacity={0.1}
                     dot={false}
                     activeDot={{ r: 3, fill: 'var(--accent)' }}
                   />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             )}
           </div>
@@ -400,7 +389,7 @@ export function AnalyticsContainer() {
           testId="chart-battery-bars"
           className="lg:col-span-5"
         >
-          <div className="max-h-80 space-y-3 overflow-y-auto pr-1">
+          <div className="-mx-2 max-h-[328px] space-y-[3px] overflow-y-auto">
             {batteryRows.length === 0 ? (
               <p className="text-muted py-10 text-center text-sm">
                 Tidak ada telemetry node
@@ -408,30 +397,29 @@ export function AnalyticsContainer() {
             ) : (
               batteryRows.map((n) => {
                 const pct = n.battery;
-                const width =
-                  pct == null ? 0 : Math.max(0, Math.min(100, pct));
+                const width = pct == null ? 0 : Math.max(0, Math.min(100, pct));
                 return (
                   <div
                     key={n.id}
                     data-testid={`battery-row-${n.id}`}
-                    className="space-y-2"
+                    className="hover:bg-chip space-y-1.5 rounded-lg px-2 py-[7px]"
                   >
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-foreground truncate text-sm font-medium">
+                      <span className="text-foreground-soft truncate text-xs">
                         {n.name}
                       </span>
                       <span
                         className={cn(
-                          'shrink-0 font-mono text-sm tabular-nums',
+                          'shrink-0 font-mono text-xs font-semibold tabular-nums',
                           batteryTextClass(pct)
                         )}
                       >
                         {pct == null ? '-' : `${pct}%`}
                       </span>
                     </div>
-                    <div className="bg-border h-2 overflow-hidden">
+                    <div className="bg-control-hover h-1.5 overflow-hidden rounded-full">
                       <div
-                        className="h-full"
+                        className="h-full rounded-full"
                         style={{
                           width: `${width}%`,
                           backgroundColor: batteryBarColor(pct),
@@ -445,25 +433,36 @@ export function AnalyticsContainer() {
           </div>
         </Panel>
 
-        <Panel
-          title="Sinyal terbaru (RSSI / SNR)"
-          testId="table-signal"
-          className="lg:col-span-7"
+        {/* Not a Panel: the design bleeds the table head to the card edges. */}
+        <section
+          data-testid="table-signal"
+          className="bg-card rounded-card overflow-hidden lg:col-span-7"
         >
+          <h2 className="text-foreground px-5 pt-[18px] pb-3.5 text-[0.9375rem] font-semibold">
+            Sinyal terbaru (RSSI / SNR)
+          </h2>
           {telemetry.length === 0 ? (
-            <p className="text-muted py-10 text-center text-sm">
+            <p className="text-muted px-5 pb-10 text-center text-sm">
               Tidak ada telemetry node
             </p>
           ) : (
-            <div className="border-border max-h-80 overflow-auto border">
-              <table className="w-full min-w-[360px] border-collapse text-left text-sm">
-                <thead className="bg-card sticky top-0 z-10">
-                  <tr className="border-border text-muted border-b text-sm font-semibold">
-                    <th className="px-3 py-3">Node</th>
-                    <th className="px-3 py-3">Status</th>
-                    <th className="px-3 py-3">RSSI</th>
-                    <th className="px-3 py-3">SNR</th>
-                    <th className="px-3 py-3">Bat</th>
+            <div className="max-h-80 overflow-auto">
+              <table className="w-full min-w-[420px] border-collapse text-left">
+                <thead className="bg-surface-header sticky top-0 z-10">
+                  <tr className="text-muted text-[0.6875rem] font-semibold tracking-[0.06em] uppercase">
+                    <th className="px-5 py-2.5 font-semibold">Node</th>
+                    <th className="w-[116px] px-3 py-2.5 font-semibold">
+                      Status
+                    </th>
+                    <th className="w-[78px] px-3 py-2.5 text-right font-semibold">
+                      RSSI
+                    </th>
+                    <th className="w-[68px] px-3 py-2.5 text-right font-semibold">
+                      SNR
+                    </th>
+                    <th className="w-[68px] px-5 py-2.5 text-right font-semibold">
+                      Bat
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -475,26 +474,24 @@ export function AnalyticsContainer() {
                         data-testid={`signal-row-${n.id}`}
                         className="border-border hover:bg-control-hover border-b last:border-b-0"
                       >
-                        <td className="max-w-40 px-3 py-3">
-                          <p className="text-foreground truncate text-sm font-medium">
+                        <td className="max-w-40 px-5 py-2.5">
+                          <span className="text-foreground block truncate text-[0.8125rem]">
                             {n.name || n.id}
-                          </p>
-                          <p className="text-muted truncate font-mono text-sm tabular-nums">
+                          </span>
+                          <span className="text-muted block truncate font-mono text-[0.6875rem] tabular-nums">
                             {n.id}
-                          </p>
+                          </span>
                         </td>
-                        <td className="px-3 py-3">
+                        <td className="px-3 py-2.5">
                           <span
                             className={cn(
-                              'inline-flex items-center gap-2 border-l-2 pl-2 text-sm font-semibold',
-                              online
-                                ? 'border-triage-green text-triage-green'
-                                : 'border-border text-muted'
+                              'inline-flex items-center gap-2 text-xs font-semibold',
+                              online ? 'text-triage-green' : 'text-muted'
                             )}
                           >
                             <span
                               className={cn(
-                                'size-2.5 shrink-0',
+                                'size-2 shrink-0 rounded-full',
                                 online ? 'bg-triage-green' : 'bg-muted'
                               )}
                               aria-hidden
@@ -502,10 +499,10 @@ export function AnalyticsContainer() {
                             {n.status}
                           </span>
                         </td>
-                        <td className="px-3 py-3 font-mono text-sm tabular-nums">
+                        <td className="text-foreground-soft px-3 py-2.5 text-right font-mono text-xs tabular-nums">
                           {n.rssi == null ? '-' : n.rssi}
                         </td>
-                        <td className="px-3 py-3 font-mono text-sm tabular-nums">
+                        <td className="text-foreground-soft px-3 py-2.5 text-right font-mono text-xs tabular-nums">
                           {n.snr == null
                             ? '-'
                             : Number.isInteger(n.snr)
@@ -514,7 +511,7 @@ export function AnalyticsContainer() {
                         </td>
                         <td
                           className={cn(
-                            'px-3 py-3 font-mono text-sm tabular-nums',
+                            'px-5 py-2.5 text-right font-mono text-xs font-semibold tabular-nums',
                             batteryTextClass(n.battery)
                           )}
                         >
@@ -527,7 +524,7 @@ export function AnalyticsContainer() {
               </table>
             </div>
           )}
-        </Panel>
+        </section>
       </div>
     </div>
   );

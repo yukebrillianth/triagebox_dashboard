@@ -77,7 +77,8 @@ function VictimRow({
       onClick={() => router.push(`/pasien/${victim.id}`)}
       className={cn(
         'border-border hover:bg-control-hover cursor-pointer border-b transition-colors',
-        stale && 'opacity-60',
+        // Stale rows are marked per-cell (dim vitals, yellow timestamp) rather
+        // than with row opacity, which dropped the whole row below AA.
         // Design marks RED rows with an inset left bar rather than a border.
         victim.currentPriority === 'RED' &&
           'shadow-[inset_2px_0_0_var(--triage-red)]',
@@ -322,7 +323,7 @@ export function PasienContainer() {
               setSearch(e.target.value);
             }}
             placeholder="Cari RFID atau nama korban…"
-            className="bg-surface-header text-foreground rounded-control focus:ring-accent/50 h-11 w-full py-0 pr-24 pl-[38px] text-[0.8125rem] outline-none focus:ring-2 focus:ring-inset sm:h-10"
+            className="bg-surface-input text-foreground rounded-control focus:bg-surface-header focus:ring-accent/50 h-11 w-full py-0 pr-24 pl-[38px] text-[0.8125rem] outline-none focus:ring-2 focus:ring-inset sm:h-10"
           />
           <span className="text-dim pointer-events-none absolute right-3.5 font-mono text-[0.6875rem] tabular-nums">
             {search ? '' : `${filtered.length} hasil`}
@@ -366,7 +367,7 @@ export function PasienContainer() {
             setPage(0);
             setNodeId(e.target.value);
           }}
-          className="bg-surface-header text-muted rounded-control h-11 min-w-36 px-3.5 text-[0.8125rem] outline-none sm:h-[38px]"
+          className="bg-surface-input text-foreground-soft rounded-control h-11 min-w-36 px-3.5 text-[0.8125rem] outline-none sm:h-[38px]"
         >
           <option value="">Semua node</option>
           {(nodes ?? []).map((n) => (

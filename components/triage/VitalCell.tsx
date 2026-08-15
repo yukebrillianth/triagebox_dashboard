@@ -11,6 +11,8 @@ type VitalCellProps = {
   kind?: VitalKind;
   /** Compact table variant: value only, right-aligned, no label. */
   variant?: 'stacked' | 'inline';
+  /** Stacked value size: 22px on the detail page, 15px in Command Center. */
+  size?: 'md' | 'lg';
   className?: string;
   'data-testid'?: string;
 };
@@ -22,6 +24,7 @@ export function VitalCell({
   stale = false,
   kind,
   variant = 'stacked',
+  size = 'lg',
   className,
   'data-testid': testId,
 }: VitalCellProps) {
@@ -47,20 +50,29 @@ export function VitalCell({
   return (
     <div
       data-testid={testId}
-      className={cn('flex min-w-0 flex-col gap-1', className)}
+      className={cn(
+        'flex min-w-0 flex-col',
+        size === 'lg'
+          ? 'bg-surface-input rounded-control gap-[5px] px-3.5 py-3'
+          : 'gap-0.5',
+        className
+      )}
     >
-      <span className="text-muted text-[0.625rem] font-semibold tracking-[0.06em] uppercase">
+      <span className="text-muted text-[0.6875rem] font-semibold tracking-[0.06em] uppercase">
         {label}
       </span>
       <span
         className={cn(
-          'font-mono text-lg leading-none font-semibold tabular-nums',
+          'font-mono leading-none font-semibold tabular-nums',
+          size === 'lg' ? 'text-[1.375rem]' : 'text-[0.9375rem]',
           stale ? 'text-dim' : tone
         )}
       >
         {display}
         {unit && display !== '-' ? (
-          <span className="text-dim ml-1 text-xs font-normal">{unit}</span>
+          <span className="text-dim ml-[3px] text-[0.6875rem] font-normal">
+            {unit}
+          </span>
         ) : null}
       </span>
     </div>

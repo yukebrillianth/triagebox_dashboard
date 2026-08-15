@@ -319,20 +319,21 @@ export function PasienDetailContainer() {
                 stale={stale}
                 data-testid="vital-rr"
               />
-              <div className="flex min-w-0 flex-col gap-1">
-                <span className="text-muted text-[0.625rem] font-semibold tracking-[0.06em] uppercase">
+              {/* Mirrors VitalCell's lg variant; BP has no single numeric value. */}
+              <div className="bg-surface-input rounded-control flex min-w-0 flex-col gap-[5px] px-3.5 py-3">
+                <span className="text-muted text-[0.6875rem] font-semibold tracking-[0.06em] uppercase">
                   BP
                 </span>
                 <span
                   data-testid="vital-bp"
                   className={cn(
-                    'font-mono text-lg leading-none font-semibold tabular-nums',
+                    'font-mono text-[1.375rem] leading-none font-semibold tabular-nums',
                     stale ? 'text-dim' : 'text-foreground'
                   )}
                 >
                   {formatBp(bpSys, bpDia)}
                   {bpSys != null && bpDia != null ? (
-                    <span className="text-dim ml-1 text-xs font-normal">
+                    <span className="text-dim ml-[3px] text-[0.6875rem] font-normal">
                       mmHg
                     </span>
                   ) : null}

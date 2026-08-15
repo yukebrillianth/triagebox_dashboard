@@ -12,7 +12,7 @@ export function ToastProvider() {
         style: {
           background: 'var(--card)',
           color: 'var(--foreground)',
-          borderRadius: '0.125rem',
+          borderRadius: 'var(--radius-control)',
           fontSize: '0.875rem',
           fontWeight: '600',
           padding: '0.75rem 1rem',

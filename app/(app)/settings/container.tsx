@@ -90,33 +90,33 @@ export function SettingsContainer() {
 
   if (isLoading && !settings) {
     return (
-      <div data-testid="page-settings" className="space-y-4">
+      <div data-testid="page-settings" className="space-y-3.5">
         <header>
-          <h1 className="text-foreground text-xl font-semibold tracking-tight">
+          <h1 className="text-foreground text-xl font-semibold tracking-tight sm:text-2xl">
             Pengaturan
           </h1>
-          <p className="text-muted mt-1 text-sm">Memuat…</p>
+          <p className="text-muted mt-1 text-[0.8125rem] sm:text-sm">Memuat…</p>
         </header>
-        <div className="border-border bg-card h-48 animate-pulse border" />
+        <div className="bg-card rounded-card h-48 animate-pulse" />
       </div>
     );
   }
 
   return (
-    <div data-testid="page-settings" className="space-y-4">
-      <header className="border-border bg-card border px-4 py-3">
-        <h1 className="text-foreground text-xl font-semibold tracking-tight">
+    <div data-testid="page-settings" className="space-y-3.5">
+      <header className="min-w-0">
+        <h1 className="text-foreground text-xl font-semibold tracking-tight sm:text-2xl">
           Pengaturan
         </h1>
-        <p className="text-muted mt-1 text-sm">
+        <p className="text-muted mt-1 text-[0.8125rem] sm:text-sm">
           Identitas operasional, preferensi lokal, dan status koneksi API.
         </p>
       </header>
 
       {isError && !settings ? (
-        <Card className="border-triage-red">
+        <Card>
           <CardBody className="space-y-2">
-            <p className="text-triage-red font-semibold">
+            <p className="text-triage-red-ink font-semibold">
               Gagal memuat pengaturan
             </p>
             <p className="text-muted text-sm">
@@ -134,13 +134,13 @@ export function SettingsContainer() {
         </Card>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid items-start gap-3.5 lg:grid-cols-2">
         <Card data-testid="settings-form-card" className="lg:col-span-2">
           <CardHeader
             title="Identitas operasional"
             description="Nama RS, bencana, dan operator yang tampil di topbar."
           />
-          <CardBody>
+          <CardBody className="p-[22px]">
             <form
               data-testid="settings-form"
               onSubmit={handleSubmit(onSubmit)}
@@ -215,16 +215,16 @@ export function SettingsContainer() {
             title="Suara alert"
             description="Preferensi lokal browser ini. Tidak dikirim ke server."
           />
-          <CardBody>
-            <label className="border-border bg-background hover:bg-control-hover flex min-h-11 cursor-pointer items-center gap-3 border px-3">
+          <CardBody className="p-[22px]">
+            <label className="bg-surface-input hover:bg-control-hover rounded-control flex min-h-11 cursor-pointer items-center gap-3 px-3.5 transition-colors">
               <input
                 data-testid="toggle-sound"
                 type="checkbox"
                 checked={soundEnabled}
                 onChange={(e) => setSoundEnabled(e.target.checked)}
-                className="border-border text-accent size-5 shrink-0 border accent-[var(--accent)]"
+                className="text-accent size-[18px] shrink-0 accent-[var(--accent)]"
               />
-              <span className="text-foreground text-sm font-medium">
+              <span className="text-foreground text-[0.8125rem] font-medium">
                 {soundEnabled ? 'Suara aktif' : 'Suara dimatikan'}
               </span>
             </label>
@@ -241,10 +241,10 @@ export function SettingsContainer() {
               </>
             }
           />
-          <CardBody>
+          <CardBody className="p-[22px]">
             <p
               data-testid="display-api-url"
-              className="border-border bg-background text-foreground border px-3 py-3 font-mono text-sm break-all"
+              className="bg-surface-input text-foreground rounded-control px-3.5 py-3 font-mono text-[0.8125rem] break-all"
             >
               {apiUrl}
             </p>

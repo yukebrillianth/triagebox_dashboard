@@ -66,18 +66,16 @@ export function Field({
     <div className={cn('space-y-1.5', className)} {...props}>
       <label
         htmlFor={controlId}
-        className="text-foreground block text-xs font-semibold tracking-wide uppercase"
+        className="text-foreground-soft block text-xs font-medium"
       >
         {label}
         {required ? (
-          <span className="text-triage-red ml-1" aria-hidden>
+          <span className="text-triage-red-ink ml-1" aria-hidden>
             *
           </span>
         ) : null}
         {optional ? (
-          <span className="text-muted ml-1 font-normal normal-case">
-            (opsional)
-          </span>
+          <span className="text-dim ml-1 font-normal">opsional</span>
         ) : null}
       </label>
       {control}
@@ -87,7 +85,7 @@ export function Field({
         </p>
       ) : null}
       {error ? (
-        <p id={errorId} className="text-triage-red text-xs" role="alert">
+        <p id={errorId} className="text-triage-red-ink text-xs" role="alert">
           {error}
         </p>
       ) : null}
