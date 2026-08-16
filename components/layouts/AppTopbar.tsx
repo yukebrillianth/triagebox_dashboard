@@ -125,6 +125,9 @@ export function AppTopbar({
           data-testid="wib-clock"
           dateTime={new Date(now).toISOString()}
           title="Waktu Indonesia Barat"
+          // The server and the browser render this a moment apart, so the
+          // seconds never match. The clock is client-owned; let React patch it.
+          suppressHydrationWarning
           className="text-muted hidden min-w-[12.5rem] text-right font-medium tabular-nums sm:block"
         >
           {wibLabel} WIB
@@ -159,14 +162,14 @@ export function AppTopbar({
             theme === 'dark' ? 'Aktifkan mode terang' : 'Aktifkan mode gelap'
           }
           aria-pressed={theme === 'dark'}
+          // `theme` is null on the server; the label fills in after mount.
+          suppressHydrationWarning
           onClick={toggleTheme}
           className="rounded-control hover:bg-control-hover text-foreground inline-flex size-11 items-center justify-center transition-colors"
         >
-          {theme === 'dark' ? (
-            <Sun className="size-5" aria-hidden />
-          ) : (
-            <Moon className="size-5" aria-hidden />
-          )}
+          {/* CSS picks the icon so the server needn't know the theme. */}
+          <Sun className="hidden size-5 dark:block" aria-hidden />
+          <Moon className="size-5 dark:hidden" aria-hidden />
         </button>
 
         <button

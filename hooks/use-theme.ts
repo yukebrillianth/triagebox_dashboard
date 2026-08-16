@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useSyncExternalStore } from 'react';
 
 import {
   applyTheme,
@@ -10,19 +10,38 @@ import {
   writeStoredTheme,
 } from '@/lib/theme';
 
-export function useTheme() {
-  const [theme, setThemeState] = useState<ThemeMode>(() => {
-    if (typeof document === 'undefined') return 'dark';
-    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+/**
+ * The `dark` class on <html> is the source of truth; the inline script in
+ * `app/layout.tsx` sets it before paint. This hook subscribes to that class
+ * instead of holding its own copy, so there is nothing to get out of sync.
+ */
+function subscribe(onChange: () => void): () => void {
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class'],
   });
+  return () => observer.disconnect();
+}
+
+function getSnapshot(): ThemeMode {
+  return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+}
+
+/** The server cannot know which theme the bootstrap script will pick. */
+function getServerSnapshot(): null {
+  return null;
+}
+
+export function useTheme() {
+  const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
   useEffect(() => {
     const media = window.matchMedia('(prefers-color-scheme: dark)');
     const onChange = () => {
       const stored = readStoredTheme();
       if (stored === 'light' || stored === 'dark') return;
-      const next = resolveTheme(null, media.matches);
-      applyTheme(next);
-      setThemeState(next);
+      applyTheme(resolveTheme(null, media.matches));
     };
     media.addEventListener('change', onChange);
     return () => media.removeEventListener('change', onChange);
@@ -31,12 +50,11 @@ export function useTheme() {
   const setTheme = useCallback((mode: ThemeMode) => {
     applyTheme(mode);
     writeStoredTheme(mode);
-    setThemeState(mode);
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  }, [setTheme, theme]);
+    setTheme(getSnapshot() === 'dark' ? 'light' : 'dark');
+  }, [setTheme]);
 
   return { theme, setTheme, toggleTheme };
 }
