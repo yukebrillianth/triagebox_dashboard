@@ -18,15 +18,23 @@ import {
   Select,
   Textarea,
 } from '@/components/ui';
-import { queryKeys, useNodes, useStations } from '@/hooks/use-api';
+import {
+  queryKeys,
+  useNodes,
+  usePendingStations,
+  useStations,
+} from '@/hooks/use-api';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import { getErrorMessage, getValidationErrors } from '@/lib/http-error';
 import {
+  adoptStationSchema,
   createNodeSchema,
   createStationSchema,
   editNodeSchema,
   editStationSchema,
+  type AdoptStationForm,
+  type AdoptStationFormValues,
   type CreateNodeForm,
   type CreateNodeFormValues,
   type CreateStationForm,
@@ -36,7 +44,7 @@ import {
   type EditStationForm,
   type EditStationFormValues,
 } from '@/schemas/device';
-import type { Node, OnlineStatus, Station } from '@/types';
+import type { Node, OnlineStatus, PendingStation, Station } from '@/types';
 
 type Tab = 'station' | 'node';
 type StationDialog =
@@ -337,6 +345,123 @@ function StationFormDialog({
   );
 }
 
+function AdoptStationDialog({
+  pending,
+  onClose,
+  onSaved,
+}: {
+  pending: PendingStation | null;
+  onClose: () => void;
+  onSaved: () => Promise<void> | void;
+}) {
+  const form = useForm<AdoptStationFormValues, unknown, AdoptStationForm>({
+    resolver: zodResolver(adoptStationSchema),
+    defaultValues: { id: '', name: '', nodeCount: 0, nodeIdBase: 0 },
+  });
+
+  useEffect(() => {
+    if (!pending) return;
+    form.reset({
+      id: pending.announcedStationId,
+      name: pending.announcedStationId,
+      nodeCount: pending.nodeCount ?? 0,
+      nodeIdBase: 0,
+    });
+  }, [pending, form]);
+
+  async function onSubmit(values: AdoptStationForm) {
+    if (!pending) return;
+    try {
+      await api.adoptStation({
+        mac: pending.mac,
+        id: values.id.trim(),
+        name: values.name.trim(),
+        nodeCount: values.nodeCount,
+        nodeIdBase: values.nodeIdBase,
+      });
+      toast.success(`Station ${values.id} diadopsi`);
+      await onSaved();
+      onClose();
+    } catch (err) {
+      const fe = getValidationErrors(err);
+      if (fe) {
+        for (const [field, message] of Object.entries(fe)) {
+          form.setError(field as keyof AdoptStationFormValues, {
+            type: 'server',
+            message,
+          });
+        }
+      }
+      toast.error(getErrorMessage(err));
+    }
+  }
+
+  const errors = form.formState.errors;
+
+  return (
+    <Dialog
+      open={pending !== null}
+      onClose={onClose}
+      title="Adopsi station"
+      data-testid="dialog-adopt-station"
+    >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3.5">
+        <p className="text-muted text-[0.8125rem]">
+          MAC <span className="font-mono">{pending?.mac}</span>
+          {pending?.ip ? (
+            <>
+              <span className="mx-1.5 opacity-40">·</span>
+              <span className="font-mono">{pending.ip}</span>
+            </>
+          ) : null}
+        </p>
+        <Field label="Station ID" error={errors.id?.message}>
+          <Input {...form.register('id')} data-testid="adopt-station-id" />
+        </Field>
+        <Field label="Nama" error={errors.name?.message}>
+          <Input {...form.register('name')} data-testid="adopt-station-name" />
+        </Field>
+        <div className="grid gap-3.5 sm:grid-cols-2">
+          <Field label="Jumlah node" error={errors.nodeCount?.message}>
+            <Input
+              type="number"
+              min={0}
+              max={255}
+              {...form.register('nodeCount')}
+              data-testid="adopt-node-count"
+            />
+          </Field>
+          <Field
+            label="Offset ID node"
+            hint="0 → node-01. Pakai 20 untuk station kedua agar tidak bentrok."
+            error={errors.nodeIdBase?.message}
+          >
+            <Input
+              type="number"
+              min={0}
+              max={255}
+              {...form.register('nodeIdBase')}
+              data-testid="adopt-node-base"
+            />
+          </Field>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Batal
+          </Button>
+          <Button
+            type="submit"
+            data-testid="btn-confirm-adopt"
+            disabled={form.formState.isSubmitting}
+          >
+            {form.formState.isSubmitting ? 'Mengadopsi…' : 'Adopsi'}
+          </Button>
+        </DialogFooter>
+      </form>
+    </Dialog>
+  );
+}
+
 function NodeFormDialog({
   dialog,
   stations,
@@ -576,6 +701,7 @@ export function PerangkatContainer() {
   const [includeInactive, setIncludeInactive] = useState(false);
   const [stationFilter, setStationFilter] = useState('');
   const [stationDialog, setStationDialog] = useState<StationDialog>(null);
+  const [adoptTarget, setAdoptTarget] = useState<PendingStation | null>(null);
   const [nodeDialog, setNodeDialog] = useState<NodeDialog>(null);
   const [now, setNow] = useState(() => Date.now());
 
@@ -612,12 +738,33 @@ export function PerangkatContainer() {
   // Active stations for node create dropdown (always load active list)
   const { data: activeStations } = useStations();
 
+  const { data: pendingStations } = usePendingStations();
+  const pendingRows = pendingStations ?? [];
+
   async function invalidateDevices() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.stations.all }),
       queryClient.invalidateQueries({ queryKey: queryKeys.nodes.all }),
       queryClient.invalidateQueries({ queryKey: queryKeys.kpis }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.stations.pending }),
     ]);
+  }
+
+  async function handleDismissPending(p: PendingStation) {
+    if (
+      !window.confirm(
+        `Abaikan station ${p.announcedStationId} (${p.mac})? Ia akan muncul lagi saat station itu terhubung ulang.`
+      )
+    ) {
+      return;
+    }
+    try {
+      await api.dismissPendingStation(p.mac);
+      toast.success('Kandidat diabaikan');
+      await invalidateDevices();
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
   }
 
   async function handleDeleteStation(s: Station) {
@@ -689,6 +836,70 @@ export function PerangkatContainer() {
           Tampilkan nonaktif
         </Chip>
       </header>
+
+      {/* Adoption candidates. Rendered above the tabs and only when non-empty:
+          an unregistered station has all of its data dropped, so this is the one
+          thing on the page that must not be behind a tab. */}
+      {pendingRows.length > 0 ? (
+        <section
+          data-testid="pending-stations"
+          className="bg-card rounded-card overflow-hidden"
+        >
+          <header className="border-border flex flex-wrap items-center justify-between gap-2 border-b px-5 py-3">
+            <div className="min-w-0">
+              <h2 className="text-foreground text-sm font-semibold">
+                Menunggu adopsi
+                <span className="text-triage-yellow ml-2 font-mono tabular-nums">
+                  {pendingRows.length}
+                </span>
+              </h2>
+              <p className="text-muted mt-0.5 text-xs">
+                Station ini mengirim data tapi belum terdaftar — semua paketnya
+                dibuang sampai diadopsi.
+              </p>
+            </div>
+          </header>
+          <ul className="divide-border divide-y">
+            {pendingRows.map((p) => (
+              <li
+                key={p.mac}
+                data-testid="pending-station-row"
+                className="flex flex-wrap items-center gap-x-5 gap-y-2 px-5 py-3.5"
+              >
+                <span className="text-foreground min-w-0 flex-1 font-mono text-[0.8125rem] font-semibold">
+                  {p.announcedStationId}
+                </span>
+                <span className="text-muted font-mono text-xs">{p.mac}</span>
+                <span className="text-muted font-mono text-xs tabular-nums">
+                  {p.ip ?? '-'}
+                </span>
+                <span className="text-dim text-xs">{p.firmware ?? '-'}</span>
+                <span className="text-muted text-xs tabular-nums">
+                  {p.nodeCount ?? 0} node
+                </span>
+                <span className="text-dim text-xs tabular-nums">
+                  {formatRelativeWib(p.lastSeen, now)}
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
+                  <Button
+                    data-testid="btn-adopt-station"
+                    onClick={() => setAdoptTarget(p)}
+                  >
+                    Adopsi
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    data-testid="btn-dismiss-pending"
+                    onClick={() => void handleDismissPending(p)}
+                  >
+                    Abaikan
+                  </Button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <div className="bg-card rounded-card flex flex-wrap items-center gap-1.5 px-3.5 py-3">
         <Chip
@@ -1023,6 +1234,14 @@ export function PerangkatContainer() {
         <StationFormDialog
           dialog={stationDialog}
           onClose={() => setStationDialog(null)}
+          onSaved={invalidateDevices}
+        />
+      ) : null}
+
+      {adoptTarget ? (
+        <AdoptStationDialog
+          pending={adoptTarget}
+          onClose={() => setAdoptTarget(null)}
           onSaved={invalidateDevices}
         />
       ) : null}

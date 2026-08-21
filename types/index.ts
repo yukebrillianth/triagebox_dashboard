@@ -196,6 +196,31 @@ export type CreateStationInput = {
   notes?: string | null;
 };
 
+/**
+ * A station publishing on `triagebox/{id}/announce` that is not registered yet.
+ * Keyed on MAC: it is the only identity a station cannot change from its own
+ * configuration, so every other field here is a suggestion the operator may
+ * override when adopting.
+ */
+export type PendingStation = {
+  mac: string;
+  announcedStationId: string;
+  ip: string | null;
+  firmware: string | null;
+  nodeCount: number | null;
+  firstSeen: string;
+  lastSeen: string;
+};
+
+export type AdoptStationInput = {
+  mac: string;
+  id: string;
+  name: string;
+  nodeCount?: number;
+  /** Offset for generated node ids, so a second station starts at node-21. */
+  nodeIdBase?: number;
+};
+
 export type UpdateStationInput = {
   name?: string;
   firmware?: string | null;
@@ -305,6 +330,7 @@ export type WsEventMap = {
   'vital.updated': WsVitalUpdated;
   'node.status': WsNodeStatus;
   'station.status': WsStationStatus;
+  'station.pending': PendingStation;
   'alert.created': WsAlertCreated;
   'activity.created': WsActivityCreated;
   'kpi.updated': WsKpiUpdated;

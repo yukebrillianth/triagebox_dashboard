@@ -62,7 +62,10 @@ export type RealtimeContextValue = {
 
 const RealtimeContext = createContext<RealtimeContextValue | null>(null);
 
-function mergeVictimInList(list: Victim[] | undefined, victim: Victim): Victim[] {
+function mergeVictimInList(
+  list: Victim[] | undefined,
+  victim: Victim
+): Victim[] {
   if (!list) return [victim];
   const idx = list.findIndex((v) => v.id === victim.id);
   if (idx === -1) return [victim, ...list];
@@ -303,9 +306,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
               rssi: payload.rssi !== undefined ? payload.rssi : n.rssi,
               snr: payload.snr !== undefined ? payload.snr : n.snr,
               lastSeen:
-                payload.lastSeen !== undefined
-                  ? payload.lastSeen
-                  : n.lastSeen,
+                payload.lastSeen !== undefined ? payload.lastSeen : n.lastSeen,
             }
           : n;
 
@@ -326,9 +327,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
               ...s,
               status: payload.status as Station['status'],
               lastSeen:
-                payload.lastSeen !== undefined
-                  ? payload.lastSeen
-                  : s.lastSeen,
+                payload.lastSeen !== undefined ? payload.lastSeen : s.lastSeen,
             }
           : s;
 
@@ -340,6 +339,17 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         queryKeys.stations.detail(payload.stationId),
         (old) => (old ? apply(old) : old)
       );
+    };
+
+    /**
+     * Invalidated rather than patched: candidates are rare, the list is tiny, and
+     * the announce is retained — so a refetch is cheap and it also picks up an
+     * adoption performed from another browser tab.
+     */
+    const onStationPending = () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.stations.pending,
+      });
     };
 
     const onAlertCreated = (alert: WsAlertCreated) => {
@@ -396,6 +406,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       'vital.updated': onVitalUpdated,
       'node.status': onNodeStatus,
       'station.status': onStationStatus,
+      'station.pending': onStationPending,
       'alert.created': onAlertCreated,
       'activity.created': onActivityCreated,
       'kpi.updated': onKpiUpdated,
@@ -499,7 +510,9 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <RealtimeContext.Provider value={value}>{children}</RealtimeContext.Provider>
+    <RealtimeContext.Provider value={value}>
+      {children}
+    </RealtimeContext.Provider>
   );
 }
 

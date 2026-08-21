@@ -4,6 +4,7 @@ import { HttpError } from './http-error';
 
 import type {
   Activity,
+  AdoptStationInput,
   Alert,
   AnalyticsSummary,
   CreateNodeInput,
@@ -16,6 +17,7 @@ import type {
   ListStationsParams,
   ListVictimsParams,
   Node,
+  PendingStation,
   ReportSummary,
   Settings,
   Station,
@@ -39,7 +41,9 @@ type ApiFetchOptions = RequestInit & {
   timeout?: number;
 };
 
-function toQuery(params?: Record<string, string | number | boolean | undefined | null>): string {
+function toQuery(
+  params?: Record<string, string | number | boolean | undefined | null>
+): string {
   if (!params) return '';
   const sp = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
@@ -83,7 +87,12 @@ export async function apiFetch<T = unknown>(
     const data = await response.json().catch(() => null);
 
     if (!response.ok) {
-      if (data && typeof data === 'object' && data !== null && 'errors' in data) {
+      if (
+        data &&
+        typeof data === 'object' &&
+        data !== null &&
+        'errors' in data
+      ) {
         const err = new HttpError(
           response.status,
           response.statusText,
@@ -95,11 +104,19 @@ export async function apiFetch<T = unknown>(
         ).errors;
         throw err;
       }
-      const msg =
-        data && typeof data === 'object' && data !== null
-          ? ((data as { error?: string; message?: string }).error ||
-              (data as { message?: string }).message)
+      // Prefer `message` over `error`: Nest puts the specific reason in
+      // `message` ("Station 'st-09' or one of its node ids already exists") and
+      // only the status name in `error` ("Conflict"), which tells the operator
+      // nothing they can act on. class-validator sends `message` as an array.
+      const body = data as {
+        error?: string;
+        message?: string | string[];
+      } | null;
+      const raw =
+        data && typeof data === 'object' && body
+          ? (body.message ?? body.error)
           : undefined;
+      const msg = Array.isArray(raw) ? raw.join('. ') : raw;
       throw new HttpError(
         response.status,
         response.statusText,
@@ -117,7 +134,12 @@ export async function apiFetch<T = unknown>(
     }
 
     if (error instanceof TypeError) {
-      throw new HttpError(0, 'Network Error', null, 'Failed to connect to server');
+      throw new HttpError(
+        0,
+        'Network Error',
+        null,
+        'Failed to connect to server'
+      );
     }
 
     throw error;
@@ -232,6 +254,24 @@ export const api = {
     return apiFetch<Station>(`/api/stations/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     });
+  },
+
+  listPendingStations(): Promise<PendingStation[]> {
+    return apiFetch<PendingStation[]>('/api/stations/pending');
+  },
+
+  adoptStation(body: AdoptStationInput): Promise<Station> {
+    return apiFetch<Station>('/api/stations/adopt', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  },
+
+  dismissPendingStation(mac: string): Promise<PendingStation> {
+    return apiFetch<PendingStation>(
+      `/api/stations/pending/${encodeURIComponent(mac)}`,
+      { method: 'DELETE' }
+    );
   },
 
   listAlerts(params?: ListAlertsParams): Promise<Alert[]> {

@@ -15,6 +15,7 @@ import type {
   ListStationsParams,
   ListVictimsParams,
   Node,
+  PendingStation,
   ReportSummary,
   Settings,
   Station,
@@ -43,6 +44,7 @@ export const queryKeys = {
     list: (params?: ListStationsParams) =>
       [...queryKeys.stations.all, 'list', params ?? {}] as const,
     detail: (id: string) => [...queryKeys.stations.all, 'detail', id] as const,
+    pending: ['stations', 'pending'] as const,
   },
   alerts: {
     all: ['alerts'] as const,
@@ -121,6 +123,14 @@ export function useStation(id: string, options?: QO<Station>) {
   });
 }
 
+export function usePendingStations(options?: QO<PendingStation[]>) {
+  return useQuery({
+    queryKey: queryKeys.stations.pending,
+    queryFn: () => api.listPendingStations(),
+    ...options,
+  });
+}
+
 export function useAlerts(params?: ListAlertsParams, options?: QO<Alert[]>) {
   return useQuery({
     queryKey: queryKeys.alerts.list(params),
@@ -171,4 +181,3 @@ export function useReport(options?: QO<ReportSummary>) {
     ...options,
   });
 }
-
