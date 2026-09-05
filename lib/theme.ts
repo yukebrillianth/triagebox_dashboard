@@ -29,7 +29,3 @@ export function writeStoredTheme(mode: ThemeMode): void {
     console.warn('TriageBox theme preference could not be saved.', error);
   }
 }
-
-export function getSystemPrefersDark(): boolean {
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
-}

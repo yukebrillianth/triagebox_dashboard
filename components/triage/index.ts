@@ -1,19 +1,22 @@
 export { PriorityBadge } from './PriorityBadge';
 export { VitalCell } from './VitalCell';
 export { ConfidenceBar } from './ConfidenceBar';
-export { ConnectionBadge } from './ConnectionBadge';
-export type { ConnectionBadgeStatus } from './ConnectionBadge';
+export { EsiChip } from './EsiChip';
 export { StaleIndicator } from './StaleIndicator';
 export { EmptyState } from './EmptyState';
 export {
-  isStale,
-  genderLabel,
-  ageRangeLabel,
-  formatRelativeWib,
+  PRIORITIES,
+  asEsi,
+  asPriority,
   formatAbsoluteWib,
   formatBp,
   formatConfidence,
+  formatRelativeWib,
+  genderLabel,
+  isStale,
   normalizeConfidence,
+  priorityRank,
+  rrBandLabel,
   vitalTone,
 } from './formatters';
 export type { VitalKind } from './formatters';

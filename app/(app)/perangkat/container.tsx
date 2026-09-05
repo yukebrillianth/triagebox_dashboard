@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import toast from 'react-hot-toast';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
 
 import { EmptyState, VitalCell, formatRelativeWib } from '@/components/triage';
 import {
@@ -29,27 +29,15 @@ import { cn } from '@/lib/cn';
 import { getErrorMessage, getValidationErrors } from '@/lib/http-error';
 import {
   adoptStationSchema,
-  createNodeSchema,
-  createStationSchema,
-  editNodeSchema,
   editStationSchema,
   type AdoptStationForm,
   type AdoptStationFormValues,
-  type CreateNodeForm,
-  type CreateNodeFormValues,
-  type CreateStationForm,
-  type CreateStationFormValues,
-  type EditNodeForm,
-  type EditNodeFormValues,
   type EditStationForm,
   type EditStationFormValues,
 } from '@/schemas/device';
-import type { Node, OnlineStatus, PendingStation, Station } from '@/types';
+import type { OnlineStatus, PendingStation, Station } from '@/types';
 
 type Tab = 'station' | 'node';
-type StationDialog =
-  { mode: 'create' } | { mode: 'edit'; station: Station } | null;
-type NodeDialog = { mode: 'create' } | { mode: 'edit'; node: Node } | null;
 
 function StatusPill({ status }: { status: OnlineStatus | string }) {
   const online = status === 'ONLINE';
@@ -73,108 +61,40 @@ function StatusPill({ status }: { status: OnlineStatus | string }) {
   );
 }
 
-function mqttLabel(s: Station): string {
-  const host = s.mqttBrokerHost?.trim();
-  if (!host) return '-';
-  const port = s.mqttBrokerPort != null ? String(s.mqttBrokerPort) : '-';
-  return `${host}:${port}`;
-}
-
-function StationFormDialog({
-  dialog,
+/**
+ * Edit only, and only name + notes.
+ *
+ * There is no "Tambah Station": a station registers itself by announcing, and
+ * the operator turns the candidate into a real station in the adoption block
+ * above — that is where its id comes from. IP and firmware arrive on the same
+ * announce, and the broker address is the backend's `MQTT_URL`, so none of them
+ * are the operator's to type.
+ */
+function StationEditDialog({
+  station,
   onClose,
   onSaved,
 }: {
-  dialog: NonNullable<StationDialog>;
+  station: Station;
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const isCreate = dialog.mode === 'create';
-  const station = dialog.mode === 'edit' ? dialog.station : null;
-
-  const createForm = useForm<
-    CreateStationFormValues,
-    unknown,
-    CreateStationForm
-  >({
-    resolver: zodResolver(createStationSchema),
-    defaultValues: {
-      id: '',
-      name: '',
-      firmware: '',
-      ipAddress: '',
-      mqttBrokerHost: '',
-      mqttBrokerPort: '',
-      notes: '',
-    },
-  });
-
-  const editForm = useForm<EditStationFormValues, unknown, EditStationForm>({
+  const form = useForm<EditStationFormValues, unknown, EditStationForm>({
     resolver: zodResolver(editStationSchema),
     defaultValues: {
-      name: station?.name ?? '',
-      firmware: station?.firmware ?? '',
-      ipAddress: station?.ipAddress ?? '',
-      mqttBrokerHost: station?.mqttBrokerHost ?? '',
-      mqttBrokerPort:
-        station?.mqttBrokerPort != null ? station.mqttBrokerPort : '',
-      notes: station?.notes ?? '',
+      name: station.name,
+      notes: station.notes ?? '',
     },
   });
 
   useEffect(() => {
-    if (dialog.mode === 'edit') {
-      editForm.reset({
-        name: dialog.station.name,
-        firmware: dialog.station.firmware ?? '',
-        ipAddress: dialog.station.ipAddress ?? '',
-        mqttBrokerHost: dialog.station.mqttBrokerHost ?? '',
-        mqttBrokerPort:
-          dialog.station.mqttBrokerPort != null
-            ? dialog.station.mqttBrokerPort
-            : '',
-        notes: dialog.station.notes ?? '',
-      });
-    }
-  }, [dialog, editForm]);
+    form.reset({ name: station.name, notes: station.notes ?? '' });
+  }, [station, form]);
 
-  async function onCreate(values: CreateStationForm) {
-    try {
-      await api.createStation({
-        id: values.id.trim(),
-        name: values.name.trim(),
-        firmware: values.firmware ?? null,
-        ipAddress: values.ipAddress ?? null,
-        mqttBrokerHost: values.mqttBrokerHost ?? null,
-        mqttBrokerPort: values.mqttBrokerPort ?? null,
-        notes: values.notes ?? null,
-      });
-      toast.success('Station dibuat');
-      onSaved();
-      onClose();
-    } catch (err) {
-      const fe = getValidationErrors(err);
-      if (fe) {
-        for (const [field, message] of Object.entries(fe)) {
-          createForm.setError(field as keyof CreateStationFormValues, {
-            type: 'server',
-            message,
-          });
-        }
-      }
-      toast.error(getErrorMessage(err));
-    }
-  }
-
-  async function onEdit(values: EditStationForm) {
-    if (!station) return;
+  async function onSubmit(values: EditStationForm) {
     try {
       await api.patchStation(station.id, {
         name: values.name.trim(),
-        firmware: values.firmware ?? null,
-        ipAddress: values.ipAddress ?? null,
-        mqttBrokerHost: values.mqttBrokerHost ?? null,
-        mqttBrokerPort: values.mqttBrokerPort ?? null,
         notes: values.notes ?? null,
       });
       toast.success('Station diperbarui');
@@ -184,7 +104,7 @@ function StationFormDialog({
       const fe = getValidationErrors(err);
       if (fe) {
         for (const [field, message] of Object.entries(fe)) {
-          editForm.setError(field as keyof EditStationFormValues, {
+          form.setError(field as keyof EditStationFormValues, {
             type: 'server',
             message,
           });
@@ -194,47 +114,21 @@ function StationFormDialog({
     }
   }
 
-  const form = isCreate ? createForm : editForm;
-  const errors = form.formState.errors as Record<
-    string,
-    { message?: string } | undefined
-  >;
-  const isSubmitting = form.formState.isSubmitting;
+  const errors = form.formState.errors;
 
   return (
     <Dialog
       open
       onClose={onClose}
-      title={isCreate ? 'Tambah Station' : 'Edit Station'}
-      description={!isCreate && station ? station.id : undefined}
+      title="Edit Station"
+      description={station.id}
       data-testid="dialog-station"
     >
       <form
         noValidate
         className="space-y-3"
-        onSubmit={
-          isCreate
-            ? createForm.handleSubmit(onCreate)
-            : editForm.handleSubmit(onEdit)
-        }
+        onSubmit={form.handleSubmit(onSubmit)}
       >
-        {isCreate ? (
-          <Field
-            label="ID"
-            htmlFor="station-id"
-            required
-            error={errors.id?.message}
-          >
-            <Input
-              id="station-id"
-              data-testid="input-station-id"
-              maxLength={64}
-              placeholder="st-03"
-              {...createForm.register('id')}
-            />
-          </Field>
-        ) : null}
-
         <Field
           label="Nama"
           htmlFor="station-name"
@@ -245,74 +139,7 @@ function StationFormDialog({
             id="station-name"
             data-testid="input-station-name"
             maxLength={128}
-            {...(isCreate
-              ? createForm.register('name')
-              : editForm.register('name'))}
-          />
-        </Field>
-
-        <Field
-          label="IP Address"
-          htmlFor="station-ip"
-          error={errors.ipAddress?.message}
-        >
-          <Input
-            id="station-ip"
-            data-testid="input-station-ip"
-            maxLength={64}
-            placeholder="192.168.10.5"
-            {...(isCreate
-              ? createForm.register('ipAddress')
-              : editForm.register('ipAddress'))}
-          />
-        </Field>
-
-        <div className="grid grid-cols-3 gap-3">
-          <Field
-            label="MQTT Host"
-            htmlFor="station-mqtt-host"
-            error={errors.mqttBrokerHost?.message}
-            className="col-span-2"
-          >
-            <Input
-              id="station-mqtt-host"
-              data-testid="input-station-mqtt-host"
-              maxLength={255}
-              placeholder="192.168.10.1"
-              {...(isCreate
-                ? createForm.register('mqttBrokerHost')
-                : editForm.register('mqttBrokerHost'))}
-            />
-          </Field>
-          <Field
-            label="Port"
-            htmlFor="station-mqtt-port"
-            error={errors.mqttBrokerPort?.message}
-          >
-            <Input
-              id="station-mqtt-port"
-              data-testid="input-station-mqtt-port"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={65535}
-              className="font-mono tabular-nums"
-              placeholder="1883"
-              {...(isCreate
-                ? createForm.register('mqttBrokerPort')
-                : editForm.register('mqttBrokerPort'))}
-            />
-          </Field>
-        </div>
-
-        <Field label="Firmware" htmlFor="station-firmware">
-          <Input
-            id="station-firmware"
-            data-testid="input-station-firmware"
-            maxLength={64}
-            {...(isCreate
-              ? createForm.register('firmware')
-              : editForm.register('firmware'))}
+            {...form.register('name')}
           />
         </Field>
 
@@ -322,9 +149,7 @@ function StationFormDialog({
             data-testid="input-station-notes"
             rows={2}
             maxLength={1024}
-            {...(isCreate
-              ? createForm.register('notes')
-              : editForm.register('notes'))}
+            {...form.register('notes')}
           />
         </Field>
 
@@ -335,9 +160,9 @@ function StationFormDialog({
           <Button
             type="submit"
             data-testid="btn-save-station"
-            disabled={isSubmitting}
+            disabled={form.formState.isSubmitting}
           >
-            {isSubmitting ? 'Menyimpan…' : 'Simpan'}
+            {form.formState.isSubmitting ? 'Menyimpan…' : 'Simpan'}
           </Button>
         </DialogFooter>
       </form>
@@ -462,247 +287,13 @@ function AdoptStationDialog({
   );
 }
 
-function NodeFormDialog({
-  dialog,
-  stations,
-  onClose,
-  onSaved,
-}: {
-  dialog: NonNullable<NodeDialog>;
-  stations: Station[];
-  onClose: () => void;
-  onSaved: () => void;
-}) {
-  const isCreate = dialog.mode === 'create';
-  const node = dialog.mode === 'edit' ? dialog.node : null;
-  const activeStations = stations.filter((s) => s.isActive);
-
-  const createForm = useForm<CreateNodeFormValues, unknown, CreateNodeForm>({
-    resolver: zodResolver(createNodeSchema),
-    defaultValues: {
-      id: '',
-      stationId: activeStations[0]?.id ?? '',
-      name: '',
-      firmware: '',
-    },
-  });
-
-  const editForm = useForm<EditNodeFormValues, unknown, EditNodeForm>({
-    resolver: zodResolver(editNodeSchema),
-    defaultValues: {
-      stationId: node?.stationId ?? '',
-      name: node?.name ?? '',
-      firmware: node?.firmware ?? '',
-    },
-  });
-
-  useEffect(() => {
-    if (dialog.mode === 'edit') {
-      editForm.reset({
-        stationId: dialog.node.stationId,
-        name: dialog.node.name,
-        firmware: dialog.node.firmware ?? '',
-      });
-    }
-  }, [dialog, editForm]);
-
-  async function onCreate(values: CreateNodeForm) {
-    try {
-      await api.createNode({
-        id: values.id.trim(),
-        stationId: values.stationId,
-        name: values.name.trim(),
-        firmware: values.firmware ?? null,
-      });
-      toast.success('Node dibuat');
-      onSaved();
-      onClose();
-    } catch (err) {
-      const fe = getValidationErrors(err);
-      if (fe) {
-        for (const [field, message] of Object.entries(fe)) {
-          createForm.setError(field as keyof CreateNodeFormValues, {
-            type: 'server',
-            message,
-          });
-        }
-      }
-      toast.error(getErrorMessage(err));
-    }
-  }
-
-  async function onEdit(values: EditNodeForm) {
-    if (!node) return;
-    try {
-      await api.patchNode(node.id, {
-        stationId: values.stationId,
-        name: values.name.trim(),
-        firmware: values.firmware ?? null,
-      });
-      toast.success('Node diperbarui');
-      onSaved();
-      onClose();
-    } catch (err) {
-      const fe = getValidationErrors(err);
-      if (fe) {
-        for (const [field, message] of Object.entries(fe)) {
-          editForm.setError(field as keyof EditNodeFormValues, {
-            type: 'server',
-            message,
-          });
-        }
-      }
-      toast.error(getErrorMessage(err));
-    }
-  }
-
-  const errors = (isCreate ? createForm : editForm).formState.errors as Record<
-    string,
-    { message?: string } | undefined
-  >;
-  const isSubmitting = (isCreate ? createForm : editForm).formState
-    .isSubmitting;
-
-  const stationOptions =
-    isCreate || !node
-      ? activeStations
-      : (() => {
-          const list = [...activeStations];
-          if (!list.some((s) => s.id === node.stationId)) {
-            const found = stations.find((s) => s.id === node.stationId);
-            if (found) list.unshift(found);
-            else
-              list.unshift({
-                id: node.stationId,
-                name: node.stationId,
-                status: 'OFFLINE',
-                lastSeen: null,
-                firmware: null,
-                ipAddress: null,
-                mqttBrokerHost: null,
-                mqttBrokerPort: null,
-                notes: null,
-                isActive: false,
-                createdAt: '',
-                updatedAt: '',
-              });
-          }
-          return list;
-        })();
-
-  return (
-    <Dialog
-      open
-      onClose={onClose}
-      title={isCreate ? 'Tambah Node' : 'Edit Node'}
-      description={!isCreate && node ? node.id : undefined}
-      data-testid="dialog-node"
-    >
-      <form
-        noValidate
-        className="space-y-3"
-        onSubmit={
-          isCreate
-            ? createForm.handleSubmit(onCreate)
-            : editForm.handleSubmit(onEdit)
-        }
-      >
-        {isCreate ? (
-          <Field
-            label="ID"
-            htmlFor="node-id"
-            required
-            error={errors.id?.message}
-          >
-            <Input
-              id="node-id"
-              data-testid="input-node-id"
-              maxLength={64}
-              placeholder="node-01"
-              {...createForm.register('id')}
-            />
-          </Field>
-        ) : null}
-
-        <Field
-          label="Station"
-          htmlFor="node-station"
-          required
-          error={errors.stationId?.message}
-          hint={
-            stationOptions.length === 0
-              ? 'Belum ada station aktif. Buat station dulu.'
-              : undefined
-          }
-        >
-          <Select
-            id="node-station"
-            data-testid="select-node-station"
-            {...(isCreate
-              ? createForm.register('stationId')
-              : editForm.register('stationId'))}
-          >
-            <option value="">Pilih station…</option>
-            {stationOptions.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name} ({s.id})
-              </option>
-            ))}
-          </Select>
-        </Field>
-
-        <Field
-          label="Nama"
-          htmlFor="node-name"
-          required
-          error={errors.name?.message}
-        >
-          <Input
-            id="node-name"
-            data-testid="input-node-name"
-            maxLength={128}
-            {...(isCreate
-              ? createForm.register('name')
-              : editForm.register('name'))}
-          />
-        </Field>
-
-        <Field label="Firmware" htmlFor="node-firmware">
-          <Input
-            id="node-firmware"
-            data-testid="input-node-firmware"
-            maxLength={64}
-            {...(isCreate
-              ? createForm.register('firmware')
-              : editForm.register('firmware'))}
-          />
-        </Field>
-
-        <DialogFooter>
-          <Button type="button" variant="secondary" onClick={onClose}>
-            Batal
-          </Button>
-          <Button
-            type="submit"
-            data-testid="btn-save-node"
-            disabled={isSubmitting || (isCreate && stationOptions.length === 0)}
-          >
-            {isSubmitting ? 'Menyimpan…' : 'Simpan'}
-          </Button>
-        </DialogFooter>
-      </form>
-    </Dialog>
-  );
-}
-
 export function PerangkatContainer() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>('station');
   const [includeInactive, setIncludeInactive] = useState(false);
   const [stationFilter, setStationFilter] = useState('');
-  const [stationDialog, setStationDialog] = useState<StationDialog>(null);
+  const [editStation, setEditStation] = useState<Station | null>(null);
   const [adoptTarget, setAdoptTarget] = useState<PendingStation | null>(null);
-  const [nodeDialog, setNodeDialog] = useState<NodeDialog>(null);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -735,7 +326,8 @@ export function PerangkatContainer() {
     isError: nodesError,
   } = useNodes(nodeParams);
 
-  // Active stations for node create dropdown (always load active list)
+  // Active station list for the node filter dropdown (stationFilter may point
+  // at an inactive station while includeInactive is on, hence the merge).
   const { data: activeStations } = useStations();
 
   const { data: pendingStations } = usePendingStations();
@@ -776,21 +368,6 @@ export function PerangkatContainer() {
     try {
       await api.deleteStation(s.id);
       toast.success('Station dinonaktifkan');
-      await invalidateDevices();
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-    }
-  }
-
-  async function handleDeleteNode(n: Node) {
-    if (
-      !window.confirm(`Nonaktifkan node "${n.name}" (${n.id})? Soft-delete.`)
-    ) {
-      return;
-    }
-    try {
-      await api.deleteNode(n.id);
-      toast.success('Node dinonaktifkan');
       await invalidateDevices();
     } catch (err) {
       toast.error(getErrorMessage(err));
@@ -928,17 +505,10 @@ export function PerangkatContainer() {
 
       {tab === 'station' ? (
         <section className="space-y-3.5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-muted text-[0.8125rem]">
-              Gateway MQTT · IP &amp; broker config
-            </p>
-            <Button
-              data-testid="btn-create-station"
-              onClick={() => setStationDialog({ mode: 'create' })}
-            >
-              + Station
-            </Button>
-          </div>
+          <p className="text-muted text-[0.8125rem]">
+            Station mendaftar lewat announce; node dibuat backend saat adopsi
+            (`node-01…`, offset di tabel adopsi).
+          </p>
 
           {stationsLoading && !stations ? (
             <div className="bg-card rounded-card h-40 animate-pulse" />
@@ -950,12 +520,7 @@ export function PerangkatContainer() {
           ) : stationRows.length === 0 ? (
             <EmptyState
               title="Belum ada station"
-              description="Tambah station untuk mendaftarkan node lapangan."
-              action={
-                <Button onClick={() => setStationDialog({ mode: 'create' })}>
-                  Buat station
-                </Button>
-              }
+              description="Nyalakan station — ia muncul di 'Menunggu adopsi' untuk diadopsi."
             />
           ) : (
             <div className="bg-card rounded-card overflow-hidden">
@@ -967,7 +532,6 @@ export function PerangkatContainer() {
                       <th className="px-3 py-2.5 font-semibold">Nama</th>
                       <th className="px-3 py-2.5 font-semibold">Status</th>
                       <th className="px-3 py-2.5 font-semibold">IP</th>
-                      <th className="px-3 py-2.5 font-semibold">MQTT</th>
                       <th className="px-3 py-2.5 font-semibold">Firmware</th>
                       <th className="px-3 py-2.5 font-semibold">Last Seen</th>
                       <th className="px-3 py-2.5 text-right font-semibold">
@@ -1003,9 +567,6 @@ export function PerangkatContainer() {
                         <td className="text-muted px-3 py-3 font-mono text-xs tabular-nums">
                           {s.ipAddress ?? '-'}
                         </td>
-                        <td className="text-muted px-3 py-3 font-mono text-xs tabular-nums">
-                          {mqttLabel(s)}
-                        </td>
                         <td className="text-muted px-3 py-3 font-mono text-xs">
                           {s.firmware ?? '-'}
                         </td>
@@ -1028,9 +589,7 @@ export function PerangkatContainer() {
                               variant="secondary"
                               size="sm"
                               data-testid={`btn-edit-station-${s.id}`}
-                              onClick={() =>
-                                setStationDialog({ mode: 'edit', station: s })
-                              }
+                              onClick={() => setEditStation(s)}
                             >
                               Edit
                             </Button>
@@ -1057,31 +616,28 @@ export function PerangkatContainer() {
         </section>
       ) : (
         <section className="space-y-3.5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-              <p className="text-muted text-[0.8125rem]">
-                Node LoRa · RSSI / SNR / bat
-              </p>
-              <Select
-                data-testid="filter-node-station"
-                value={stationFilter}
-                onChange={(e) => setStationFilter(e.target.value)}
-                className="min-w-36 sm:w-auto"
-              >
-                <option value="">Semua station</option>
-                {(stations ?? activeStations ?? []).map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <Button
-              data-testid="btn-create-node"
-              onClick={() => setNodeDialog({ mode: 'create' })}
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            {/* No create/edit/delete: node ids are generated by the backend at
+                adoption (`node-${nodeIdBase + i + 1}`) and the station firmware
+                maps the binary node_id to exactly that string, so a hand-typed
+                id can never receive a packet. Soft-delete is undone by the next
+                vital (ingest reactivates the node), so it was a lie too. */}
+            <p className="text-muted text-[0.8125rem]">
+              Node LoRa · RSSI / SNR / bat · dibuat backend saat adopsi
+            </p>
+            <Select
+              data-testid="filter-node-station"
+              value={stationFilter}
+              onChange={(e) => setStationFilter(e.target.value)}
+              className="min-w-36 sm:w-auto"
             >
-              + Node
-            </Button>
+              <option value="">Semua station</option>
+              {(stations ?? activeStations ?? []).map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </Select>
           </div>
 
           {nodesLoading && !nodes ? (
@@ -1094,17 +650,12 @@ export function PerangkatContainer() {
           ) : nodeRows.length === 0 ? (
             <EmptyState
               title="Belum ada node"
-              description="Daftarkan node di bawah station yang sudah ada."
-              action={
-                <Button onClick={() => setNodeDialog({ mode: 'create' })}>
-                  Buat node
-                </Button>
-              }
+              description="Node muncul setelah station diadopsi dengan jumlah node-nya."
             />
           ) : (
             <div className="bg-card rounded-card overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1100px] border-collapse text-left">
+                <table className="w-full min-w-[1000px] border-collapse text-left">
                   <thead className="bg-surface-header sticky top-0 z-10">
                     <tr className="text-muted text-[0.6875rem] font-semibold tracking-[0.08em] uppercase">
                       <th className="px-5 py-2.5 font-semibold">ID</th>
@@ -1125,10 +676,7 @@ export function PerangkatContainer() {
                       </th>
                       <th className="px-3 py-2.5 font-semibold">Last Seen</th>
                       <th className="px-3 py-2.5 font-semibold">Victim</th>
-                      <th className="px-3 py-2.5 font-semibold">Aktif</th>
-                      <th className="px-5 py-2.5 text-right font-semibold">
-                        Aksi
-                      </th>
+                      <th className="px-5 py-2.5 font-semibold">Aktif</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1188,37 +736,12 @@ export function PerangkatContainer() {
                             n.currentVictim?.rfid ??
                             '-'}
                         </td>
-                        <td className="px-3 py-3 text-xs">
+                        <td className="px-5 py-3 text-xs">
                           {n.isActive ? (
                             <span className="text-triage-green">Ya</span>
                           ) : (
                             <span className="text-dim">Tidak</span>
                           )}
-                        </td>
-                        <td className="px-5 py-3 text-right">
-                          <div className="inline-flex items-center gap-2">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              data-testid={`btn-edit-node-${n.id}`}
-                              onClick={() =>
-                                setNodeDialog({ mode: 'edit', node: n })
-                              }
-                            >
-                              Edit
-                            </Button>
-                            {n.isActive ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                data-testid={`btn-delete-node-${n.id}`}
-                                onClick={() => handleDeleteNode(n)}
-                                className="text-muted hover:text-triage-red-ink"
-                              >
-                                Hapus
-                              </Button>
-                            ) : null}
-                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1230,10 +753,10 @@ export function PerangkatContainer() {
         </section>
       )}
 
-      {stationDialog ? (
-        <StationFormDialog
-          dialog={stationDialog}
-          onClose={() => setStationDialog(null)}
+      {editStation ? (
+        <StationEditDialog
+          station={editStation}
+          onClose={() => setEditStation(null)}
           onSaved={invalidateDevices}
         />
       ) : null}
@@ -1242,20 +765,6 @@ export function PerangkatContainer() {
         <AdoptStationDialog
           pending={adoptTarget}
           onClose={() => setAdoptTarget(null)}
-          onSaved={invalidateDevices}
-        />
-      ) : null}
-
-      {nodeDialog ? (
-        <NodeFormDialog
-          dialog={nodeDialog}
-          stations={[
-            ...(activeStations ?? []),
-            ...(stations ?? []).filter(
-              (s) => !(activeStations ?? []).some((a) => a.id === s.id)
-            ),
-          ]}
-          onClose={() => setNodeDialog(null)}
           onSaved={invalidateDevices}
         />
       ) : null}

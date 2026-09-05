@@ -7,8 +7,6 @@ import type {
   AdoptStationInput,
   Alert,
   AnalyticsSummary,
-  CreateNodeInput,
-  CreateStationInput,
   Health,
   Kpi,
   ListActivityParams,
@@ -22,7 +20,6 @@ import type {
   Settings,
   Station,
   TriageHistory,
-  UpdateNodeInput,
   UpdateStationInput,
   UpdateVictimInput,
   Victim,
@@ -195,30 +192,6 @@ export const api = {
     );
   },
 
-  getNode(id: string): Promise<Node> {
-    return apiFetch<Node>(`/api/nodes/${encodeURIComponent(id)}`);
-  },
-
-  createNode(body: CreateNodeInput): Promise<Node> {
-    return apiFetch<Node>('/api/nodes', {
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
-  },
-
-  patchNode(id: string, body: UpdateNodeInput): Promise<Node> {
-    return apiFetch<Node>(`/api/nodes/${encodeURIComponent(id)}`, {
-      method: 'PATCH',
-      body: JSON.stringify(body),
-    });
-  },
-
-  deleteNode(id: string): Promise<Node> {
-    return apiFetch<Node>(`/api/nodes/${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-    });
-  },
-
   listStations(params?: ListStationsParams): Promise<Station[]> {
     return apiFetch<Station[]>(
       `/api/stations${toQuery({
@@ -230,17 +203,6 @@ export const api = {
               : 'false',
       })}`
     );
-  },
-
-  getStation(id: string): Promise<Station> {
-    return apiFetch<Station>(`/api/stations/${encodeURIComponent(id)}`);
-  },
-
-  createStation(body: CreateStationInput): Promise<Station> {
-    return apiFetch<Station>('/api/stations', {
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
   },
 
   patchStation(id: string, body: UpdateStationInput): Promise<Station> {

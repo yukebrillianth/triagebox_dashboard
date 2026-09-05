@@ -24,7 +24,7 @@ import type {
   Kpi,
   Node,
   Station,
-  Victim,
+  VictimRow,
   WsActivityCreated,
   WsAlertCreated,
   WsEventMap,
@@ -63,9 +63,9 @@ export type RealtimeContextValue = {
 const RealtimeContext = createContext<RealtimeContextValue | null>(null);
 
 function mergeVictimInList(
-  list: Victim[] | undefined,
-  victim: Victim
-): Victim[] {
+  list: VictimRow[] | undefined,
+  victim: VictimRow
+): VictimRow[] {
   if (!list) return [victim];
   const idx = list.findIndex((v) => v.id === victim.id);
   if (idx === -1) return [victim, ...list];
@@ -75,10 +75,10 @@ function mergeVictimInList(
 }
 
 function patchVictimInList(
-  list: Victim[] | undefined,
+  list: VictimRow[] | undefined,
   id: string,
-  patch: Partial<Victim>
-): Victim[] | undefined {
+  patch: Partial<VictimRow>
+): VictimRow[] | undefined {
   if (!list) return list;
   return list.map((v) => (v.id === id ? { ...v, ...patch } : v));
 }
@@ -87,6 +87,23 @@ function prependAlert(list: Alert[] | undefined, alert: Alert): Alert[] {
   if (!list) return [alert];
   if (list.some((a) => a.id === alert.id)) return list;
   return [alert, ...list];
+}
+
+/**
+ * True when an alert belongs in the cache behind `queryKey`.
+ *
+ * The key's last element is the `ListAlertsParams` the query was built with
+ * (`queryKeys.alerts.list`), so the filter is read back from the key rather
+ * than tracked separately. `limit` is ignored: one extra row at the head is
+ * harmless, and dropping the tail here would fight the server's ordering.
+ */
+function matchesAlertFilter(queryKey: readonly unknown[], alert: Alert) {
+  const params = queryKey[queryKey.length - 1];
+  if (!params || typeof params !== 'object') return true;
+  const { severity, acked } = params as { severity?: string; acked?: boolean };
+  if (severity !== undefined && severity !== alert.severity) return false;
+  if (acked !== undefined && acked !== alert.acknowledged) return false;
+  return true;
 }
 
 function prependActivity(
@@ -217,7 +234,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     const onVictimCreated = (victim: WsVictimCreated) => {
-      queryClient.setQueriesData<Victim[]>(
+      queryClient.setQueriesData<VictimRow[]>(
         { queryKey: [...queryKeys.victims.all, 'list'] },
         (old) => mergeVictimInList(old, victim)
       );
@@ -226,19 +243,19 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     };
 
     const onVictimUpdated = (victim: WsVictimUpdated) => {
-      queryClient.setQueriesData<Victim[]>(
+      queryClient.setQueriesData<VictimRow[]>(
         { queryKey: [...queryKeys.victims.all, 'list'] },
         (old) => mergeVictimInList(old, victim)
       );
-      queryClient.setQueryData<Victim>(
+      queryClient.setQueryData<VictimRow>(
         queryKeys.victims.detail(victim.id),
         (old) => (old ? { ...old, ...victim } : victim)
       );
     };
 
     const onPriorityChanged = (payload: WsPriorityChanged) => {
-      const patch: Partial<Victim> = {
-        currentPriority: payload.to as Victim['currentPriority'],
+      const patch: Partial<VictimRow> = {
+        currentPriority: payload.to as VictimRow['currentPriority'],
       };
       if (payload.confidence !== undefined) {
         patch.confidence = payload.confidence ?? null;
@@ -246,15 +263,18 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       if (payload.reasons !== undefined) {
         patch.reasons = payload.reasons;
       }
+      if (payload.esi !== undefined) {
+        patch.esi = payload.esi ?? null;
+      }
       if (payload.nodeId !== undefined) {
         patch.currentNodeId = payload.nodeId ?? null;
       }
 
-      queryClient.setQueriesData<Victim[]>(
+      queryClient.setQueriesData<VictimRow[]>(
         { queryKey: [...queryKeys.victims.all, 'list'] },
         (old) => patchVictimInList(old, payload.victimId, patch)
       );
-      queryClient.setQueryData<Victim>(
+      queryClient.setQueryData<VictimRow>(
         queryKeys.victims.detail(payload.victimId),
         (old) => (old ? { ...old, ...patch } : old)
       );
@@ -274,22 +294,31 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     };
 
     const onVitalUpdated = (payload: WsVitalUpdated) => {
-      const patch: Partial<Victim> = {
+      // The vitals are socket-only: Victim has no vital columns, so this patch
+      // is the ONLY place list caches ever hold hr/spo2/rr/bp/battery/esi. Any
+      // invalidate/fetch (bootstrap, reconnect, refresh) wipes them until the
+      // next reading — see VictimRow in types/index.ts.
+      const patch: Partial<VictimRow> = {
         hr: payload.hr ?? null,
         spo2: payload.spo2 ?? null,
         rr: payload.rr ?? null,
         bpSys: payload.bpSys ?? null,
         bpDia: payload.bpDia ?? null,
         battery: payload.battery ?? null,
+        esi: payload.esi ?? null,
         lastUpdate: payload.ts,
         currentNodeId: payload.nodeId,
-        currentPriority: payload.priority as Victim['currentPriority'],
+        currentPriority: payload.priority as VictimRow['currentPriority'],
       };
-      queryClient.setQueriesData<Victim[]>(
+      // age/gender are NOT patched here on purpose: they are victim columns, so
+      // `vital.updated` does not carry them and the `victim.updated` snapshot
+      // that follows every reading does. Patching them from this event would
+      // blank an answered age on every reading that omits the key.
+      queryClient.setQueriesData<VictimRow[]>(
         { queryKey: [...queryKeys.victims.all, 'list'] },
         (old) => patchVictimInList(old, payload.victimId, patch)
       );
-      queryClient.setQueryData<Victim>(
+      queryClient.setQueryData<VictimRow>(
         queryKeys.victims.detail(payload.victimId),
         (old) => (old ? { ...old, ...patch } : old)
       );
@@ -314,10 +343,6 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         { queryKey: [...queryKeys.nodes.all, 'list'] },
         (old) => (old ? old.map(apply) : old)
       );
-      queryClient.setQueryData<Node>(
-        queryKeys.nodes.detail(payload.nodeId),
-        (old) => (old ? apply(old) : old)
-      );
     };
 
     const onStationStatus = (payload: WsStationStatus) => {
@@ -335,10 +360,6 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         { queryKey: [...queryKeys.stations.all, 'list'] },
         (old) => (old ? old.map(apply) : old)
       );
-      queryClient.setQueryData<Station>(
-        queryKeys.stations.detail(payload.stationId),
-        (old) => (old ? apply(old) : old)
-      );
     };
 
     /**
@@ -353,8 +374,15 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     };
 
     const onAlertCreated = (alert: WsAlertCreated) => {
+      // Patched only into the caches whose filter the alert actually matches:
+      // the Alert Center keeps one cache per severity/ack combination, so a
+      // blind prepend showed a CRITICAL under "INFO" and an unacked alert under
+      // "Sudah ack" until the next refetch.
       queryClient.setQueriesData<Alert[]>(
-        { queryKey: [...queryKeys.alerts.all, 'list'] },
+        {
+          queryKey: [...queryKeys.alerts.all, 'list'],
+          predicate: (q) => matchesAlertFilter(q.queryKey, alert),
+        },
         (old) => prependAlert(old, alert)
       );
 
@@ -363,8 +391,6 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         // Not Infinity: a toast that never leaves stacks up until a reload.
         // Alert Center is the durable record, the toast is only the nudge.
         toast.error(msg, { duration: 12_000, id: alert.id });
-      } else if (alert.severity === 'WARNING') {
-        toast(msg, { duration: 4000, id: alert.id });
       } else {
         toast(msg, { duration: 4000, id: alert.id });
       }
@@ -378,23 +404,20 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     };
 
     const onKpiUpdated = (payload: WsKpiUpdated) => {
-      queryClient.setQueryData<Kpi>(queryKeys.kpis, (old) => {
-        if (!old) {
-          return {
-            total: payload.total,
-            byPriority: payload.byPriority,
-            onlineNodes: 0,
-            totalNodes: 0,
-            onlineStations: 0,
-            totalStations: 0,
-          };
-        }
-        return {
-          ...old,
-          total: payload.total,
-          byPriority: payload.byPriority,
-        };
-      });
+      // A cold cache is left cold on purpose: fabricating zeros here made
+      // "Node Online 0/0" look like a count while `kpi.updated` never fires on
+      // node/station transitions, so those zeros never corrected themselves.
+      // An absent cache renders its own `?? 0` fallback and fills from
+      // runBootstrap, which is the only writer of the full KPI.
+      queryClient.setQueryData<Kpi>(queryKeys.kpis, (old) =>
+        old
+          ? {
+              ...old,
+              total: payload.total,
+              byPriority: payload.byPriority,
+            }
+          : old
+      );
     };
 
     const handlers: {

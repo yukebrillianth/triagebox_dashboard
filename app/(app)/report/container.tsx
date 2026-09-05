@@ -4,15 +4,16 @@ import { useState, type ReactNode } from 'react';
 
 import {
   EmptyState,
+  PRIORITIES,
   PriorityBadge,
+  asPriority,
   formatAbsoluteWib,
   formatRelativeWib,
+  genderLabel,
 } from '@/components/triage';
 import { useReport, useSettings } from '@/hooks/use-api';
 import { cn } from '@/lib/cn';
 import type { Activity, Priority, PriorityCounts, Victim } from '@/types';
-
-const PRIORITIES: Priority[] = ['RED', 'YELLOW', 'GREEN', 'BLACK'];
 
 const PRIORITY_LABELS: Record<Priority, string> = {
   RED: 'Merah',
@@ -20,11 +21,6 @@ const PRIORITY_LABELS: Record<Priority, string> = {
   GREEN: 'Hijau',
   BLACK: 'Hitam',
 };
-
-function asPriority(p: string | null | undefined): Priority | null {
-  if (!p) return null;
-  return PRIORITIES.includes(p as Priority) ? (p as Priority) : null;
-}
 
 function parseCounts(counts: unknown): {
   total: number;
@@ -90,8 +86,7 @@ export function ReportContainer() {
   const victims: Victim[] = data?.victims ?? [];
   const { total, byPriority } = parseCounts(data?.counts);
   const triageCount = data?.triageHistoryCount ?? 0;
-  const timeline: Activity[] =
-    data?.activityTimeline ?? data?.recentActivity ?? [];
+  const timeline: Activity[] = data?.recentActivity ?? [];
 
   const hospital = blank(settings?.hospital_name);
   const disaster = blank(settings?.disaster_name);
@@ -296,7 +291,7 @@ export function ReportContainer() {
           <div className="overflow-x-auto print:overflow-visible">
             <table
               data-testid="report-victims-table"
-              className="w-full min-w-[680px] border-collapse text-left print:min-w-0"
+              className="w-full min-w-[760px] border-collapse text-left print:min-w-0"
             >
               <thead className="bg-surface-header print:bg-neutral-100">
                 <tr className="text-muted text-[0.6875rem] font-semibold tracking-[0.06em] uppercase print:border-black print:text-black">
@@ -308,6 +303,9 @@ export function ReportContainer() {
                   </th>
                   <th className="w-[62px] px-3.5 py-2.5 text-right font-semibold print:border print:border-black print:px-1.5 print:py-1.5">
                     Usia
+                  </th>
+                  <th className="w-[72px] px-3.5 py-2.5 font-semibold print:border print:border-black print:px-1.5 print:py-1.5">
+                    Gender
                   </th>
                   <th className="w-32 px-3.5 py-2.5 font-semibold print:border print:border-black print:px-1.5 print:py-1.5">
                     Prioritas
@@ -338,6 +336,11 @@ export function ReportContainer() {
                       <td className="text-foreground-soft px-3.5 py-2.5 text-right font-mono text-xs tabular-nums print:border print:border-black print:px-1.5 print:py-1 print:text-black">
                         {v.age != null ? v.age : '-'}
                       </td>
+                      {/* '-' when the Age screen was never answered; the wire's
+                          0 sentinel is already null by the time it lands here. */}
+                      <td className="text-foreground-soft px-3.5 py-2.5 text-[0.8125rem] print:border print:border-black print:px-1.5 print:py-1 print:text-black">
+                        {v.gender != null ? genderLabel(v.gender) : '-'}
+                      </td>
                       <td className="px-3.5 py-2.5 print:border print:border-black print:px-1.5 print:py-1">
                         {pr ? (
                           <PriorityBadge priority={pr} />
@@ -351,7 +354,7 @@ export function ReportContainer() {
                         {v.currentNodeId ?? '-'}
                       </td>
                       <td className="text-muted px-[22px] py-2.5 text-right font-mono text-xs tabular-nums print:border print:border-black print:px-1.5 print:py-1 print:text-black">
-                        {formatRelativeWib(v.lastUpdate ?? v.lastSeen)}
+                        {formatRelativeWib(v.lastUpdate)}
                       </td>
                     </tr>
                   );

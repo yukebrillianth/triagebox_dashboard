@@ -1,9 +1,10 @@
 /** Live backend REST/WS shapes (camelCase). Source: api-contract + curl. */
 
 export type Priority = 'RED' | 'YELLOW' | 'GREEN' | 'BLACK';
+/** MQTT only ever sends 'M' or 'F' — an unasked gender is an absent key, not a
+ *  fabricated 'U'. 'U' reaches a victim only through the operator's PATCH. */
 export type Gender = 'M' | 'F' | 'U';
 export type OnlineStatus = 'ONLINE' | 'OFFLINE';
-export type AlertSeverity = 'CRITICAL' | 'WARNING' | 'INFO' | string;
 
 export type PriorityCounts = {
   RED: number;
@@ -16,10 +17,16 @@ export type Victim = {
   id: string;
   rfid: string;
   name: string | null;
+  /** Years, and the number the model actually scored: the operator picks a band
+   *  on the device and the firmware sends its mid-point. Written by ingest but
+   *  never blanked by a later reading that omits it — an operator PATCH is the
+   *  only way to correct one. */
   age: number | null;
   gender: Gender | null;
   notes: string | null;
-  currentPriority: Priority;
+  /** `Priority?` in schema.prisma:72 — a victim row exists before any verdict
+   *  does, so every consumer must handle null. */
+  currentPriority: Priority | null;
   confidence: number | null;
   reasons: string[];
   currentNodeId: string | null;
@@ -27,15 +34,31 @@ export type Victim = {
   lastUpdate: string;
   createdAt: string;
   updatedAt: string;
-  /** Optional vitals snapshot on list/detail */
+};
+
+/**
+ * A victim as the client actually holds it: the REST row plus whatever the last
+ * `vital.updated` socket event patched on top.
+ *
+ * The vitals are socket-only. `model Victim` has no hr/spo2/rr/bp/battery
+ * columns, so no endpoint returns them — which means every `runBootstrap()` or
+ * `invalidateQueries()` (page refresh, socket reconnect, saving registration)
+ * replaces the row with the REST shape and blanks all vitals until the next
+ * reading lands. Only the detail page has a fallback:
+ * `GET /api/victims/:id/vitals`. The list and Command Center do not.
+ */
+export type VictimRow = Victim & {
   hr?: number | null;
   spo2?: number | null;
+  /** Operator-entered band mid-point, not a measurement — see `VitalReading.rr`
+   *  and the "RR (input operator)" label every surface renders it under. */
   rr?: number | null;
   bpSys?: number | null;
   bpDia?: number | null;
   battery?: number | null;
-  /** Contract alias; live list uses lastUpdate */
-  lastSeen?: string | null;
+  /** Raw ESI 1..5 of the last reading. Socket-only for the same reason the
+   *  vitals are: it is `VitalReading.esi`, per reading, not a victim column. */
+  esi?: number | null;
 };
 
 export type Kpi = {
@@ -54,9 +77,12 @@ export type Station = {
   lastSeen: string | null;
   firmware: string | null;
   ipAddress: string | null;
+  notes: string | null;
+  /** Sent by the backend, shown nowhere: the broker a station connects to is
+   *  the backend's own `MQTT_URL`, so these two never described anything the
+   *  operator could change. Do not put them back on a form. */
   mqttBrokerHost: string | null;
   mqttBrokerPort: number | null;
-  notes: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -84,7 +110,7 @@ export type Node = {
 
 export type Alert = {
   id: string;
-  severity: AlertSeverity;
+  severity: string;
   type: string;
   message: string;
   victimId: string | null;
@@ -112,39 +138,26 @@ export type Health = {
   uptimeSec: number;
 };
 
-export type HourlyTrendPoint = {
-  hour: string;
-  count: number;
-};
-
-export type NodeTelemetry = {
-  id: string;
-  name: string;
-  rssi: number | null;
-  snr: number | null;
-  battery: number | null;
-  status: OnlineStatus | string;
-};
-
 export type AnalyticsSummary = {
   byPriority: PriorityCounts;
-  hourlyTrend: HourlyTrendPoint[];
+  hourlyTrend: { hour: string; count: number }[];
   activeNodes?: number;
   avgBattery?: number | null;
-  nodesTelemetry?: NodeTelemetry[];
-};
-
-export type ReportCounts = {
-  total?: number;
-  byPriority?: Partial<PriorityCounts>;
+  nodesTelemetry?: {
+    id: string;
+    name: string;
+    rssi: number | null;
+    snr: number | null;
+    battery: number | null;
+    status: string;
+  }[];
 };
 
 export type ReportSummary = {
   victims: Victim[];
-  counts: ReportCounts | PriorityCounts | unknown;
+  counts: unknown;
   triageHistoryCount?: number;
-  /** Contract name; live backend may use recentActivity */
-  activityTimeline?: Activity[];
+  /** `recentActivity` in src/system/system.service.ts; the contract doc still says activityTimeline — stale. */
   recentActivity?: Activity[];
 };
 
@@ -154,15 +167,27 @@ export type VitalReading = {
   nodeId?: string | null;
   hr?: number | null;
   spo2?: number | null;
+  /**
+   * Whole breaths/min, but NOT a measurement: the breathing microphone is not
+   * fitted, so this is the mid-point of the four-band answer the operator taps
+   * on the device (<12 → 10, 12–20 → 16, 21–30 → 25, >30 → 36). It is the value
+   * the triage model was scored on, which is why it is shown at all — labelled
+   * as an operator entry everywhere, never as a sensor reading.
+   */
   rr?: number | null;
   bpSys?: number | null;
   bpDia?: number | null;
   battery?: number | null;
   priority?: Priority | string | null;
   confidence?: number | null;
+  /** Raw ESI 1..5 behind `priority`; null means the model refused to score.
+   *  The device collapses ESI 3/4/5 into GREEN, so this is the only field that
+   *  keeps a walking-wounded 5 apart from a could-deteriorate 3. */
+  esi?: number | null;
   reasons?: string[];
   deviceTs?: string | null;
-  createdAt?: string;
+  /** `receivedAt` in schema.prisma — there is no createdAt column. */
+  receivedAt?: string;
   [key: string]: unknown;
 };
 
@@ -173,6 +198,8 @@ export type TriageHistory = {
   toPriority: string;
   confidence?: number | null;
   reasons?: string[];
+  /** ESI in force at the transition, when the model scored it. */
+  esi?: number | null;
   createdAt: string;
   [key: string]: unknown;
 };
@@ -183,16 +210,6 @@ export type UpdateVictimInput = {
   name?: string | null;
   age?: number | null;
   gender?: Gender | null;
-  notes?: string | null;
-};
-
-export type CreateStationInput = {
-  id: string;
-  name: string;
-  firmware?: string | null;
-  ipAddress?: string | null;
-  mqttBrokerHost?: string | null;
-  mqttBrokerPort?: number | null;
   notes?: string | null;
 };
 
@@ -223,24 +240,7 @@ export type AdoptStationInput = {
 
 export type UpdateStationInput = {
   name?: string;
-  firmware?: string | null;
-  ipAddress?: string | null;
-  mqttBrokerHost?: string | null;
-  mqttBrokerPort?: number | null;
   notes?: string | null;
-};
-
-export type CreateNodeInput = {
-  id: string;
-  stationId: string;
-  name: string;
-  firmware?: string | null;
-};
-
-export type UpdateNodeInput = {
-  name?: string;
-  firmware?: string | null;
-  stationId?: string;
 };
 
 // --- List query params ---
@@ -284,6 +284,7 @@ export type WsPriorityChanged = {
   to: Priority | string;
   confidence?: number | null;
   reasons?: string[];
+  esi?: number | null;
   nodeId?: string | null;
 };
 
@@ -297,6 +298,8 @@ export type WsVitalUpdated = {
   bpDia?: number | null;
   battery?: number | null;
   priority: Priority | string;
+  /** null when the model did not score — never 0, which is not an ESI class. */
+  esi?: number | null;
   ts: string;
 };
 
@@ -319,6 +322,8 @@ export type WsAlertCreated = Alert;
 export type WsActivityCreated = Activity;
 
 export type WsKpiUpdated = {
+  /** Victim counts only — this event never carries the node/station counts,
+   *  so a KPI cache patched from it keeps whatever runBootstrap fetched. */
   total: number;
   byPriority: PriorityCounts;
 };

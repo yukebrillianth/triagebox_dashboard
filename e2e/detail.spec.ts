@@ -15,6 +15,15 @@ test.describe('Detail pasien', () => {
     await expect(page.getByTestId('input-notes')).toBeVisible();
     await expect(page.getByTestId('btn-save-registrasi')).toBeVisible();
 
+    // RR is back, but only as what it is: the band the operator tapped on the
+    // device. The label is the assertion — a bare "RR" would claim a microphone
+    // that is not fitted. ESI sits with the priority badge because the device
+    // collapses ESI 3/4/5 into GREEN; "ESI -" is a model that did not score.
+    await expect(page.getByTestId('vital-rr')).toContainText('RR (operator)');
+    await expect(page.getByTestId('esi-chip').first()).toHaveText(
+      /^ESI (?:[1-5]|-)$/
+    );
+
     const stamp = `E2E ${Date.now()}`;
     await nameInput.fill(stamp);
 

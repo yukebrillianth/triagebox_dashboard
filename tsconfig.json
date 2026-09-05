@@ -11,6 +11,9 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    // scripts/check-triage.ts runs under `node --experimental-strip-types`,
+    // which resolves the specifier verbatim and so needs the .ts suffix.
+    "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [

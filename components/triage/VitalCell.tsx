@@ -4,10 +4,16 @@ import { vitalTone, type VitalKind } from './formatters';
 
 type VitalCellProps = {
   label: string;
-  value: number | null | undefined;
+  /**
+   * A string is allowed for a value that is not a measured number — RR arrives
+   * as the operator's band ("12–20"), not a count. Without a `kind` it gets the
+   * neutral foreground color, which is the point: no clinical severity is being
+   * claimed for it.
+   */
+  value: number | string | null | undefined;
   unit?: string;
   stale?: boolean;
-  /** Applies the design's clinical thresholds for text color. */
+  /** Severity color for HR/battery. SpO2 is trend-only and stays neutral. */
   kind?: VitalKind;
   /** Compact table variant: value only, right-aligned, no label. */
   variant?: 'stacked' | 'inline';
@@ -28,8 +34,10 @@ export function VitalCell({
   className,
   'data-testid': testId,
 }: VitalCellProps) {
-  const display = value == null || Number.isNaN(value) ? '-' : String(value);
-  const tone = kind ? vitalTone(kind, value) : 'text-foreground';
+  const num = typeof value === 'number' ? value : null;
+  const display =
+    value == null || (num != null && Number.isNaN(num)) ? '-' : String(value);
+  const tone = kind ? vitalTone(kind, num) : 'text-foreground';
 
   if (variant === 'inline') {
     return (

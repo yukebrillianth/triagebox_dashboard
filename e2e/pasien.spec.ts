@@ -17,6 +17,16 @@ test.describe('Daftar pasien', () => {
     await expect(rows.first()).toBeVisible({ timeout: 15_000 });
     expect(await rows.count()).toBeGreaterThan(0);
 
+    // The two honesty labels this table now carries: RR is the operator's band,
+    // not a microphone reading, and every row's ESI reads 1-5 or "-" (the model
+    // did not score) — never 0, which is not a class the scale has.
+    await expect(
+      page.getByRole('columnheader', { name: 'RR (operator)' })
+    ).toBeVisible();
+    await expect(rows.first().getByTestId('esi-chip')).toHaveText(
+      /^ESI (?:[1-5]|-)$/
+    );
+
     await page.getByTestId('filter-search').fill('zzzz-no-match-xyz');
     await expect(page.getByTestId('empty-state')).toBeVisible({
       timeout: 5_000,

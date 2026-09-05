@@ -7,10 +7,13 @@ import { useRouter } from 'next/navigation';
 
 import {
   EmptyState,
+  EsiChip,
   PriorityBadge,
   VitalCell,
   formatRelativeWib,
   isStale,
+  priorityRank,
+  rrBandLabel,
 } from '@/components/triage';
 import {
   useActivity,
@@ -20,16 +23,9 @@ import {
   useVictims,
 } from '@/hooks/use-api';
 import { cn } from '@/lib/cn';
-import type { Node, Priority, Victim } from '@/types';
+import type { Node, VictimRow } from '@/types';
 
-const PRIORITY_RANK: Record<Priority, number> = {
-  RED: 0,
-  YELLOW: 1,
-  GREEN: 2,
-  BLACK: 3,
-};
-
-function lastUpdateMs(v: Victim): number {
+function lastUpdateMs(v: VictimRow): number {
   const t = Date.parse(v.lastUpdate);
   return Number.isNaN(t) ? 0 : t;
 }
@@ -102,7 +98,7 @@ function VictimCard({
   nodeName,
   now,
 }: {
-  victim: Victim;
+  victim: VictimRow;
   nodeName: string;
   now: number;
 }) {
@@ -122,7 +118,10 @@ function VictimCard({
       )}
     >
       <div className="flex items-center gap-3">
-        <PriorityBadge priority={victim.currentPriority} className="shrink-0" />
+        <div className="flex shrink-0 flex-col items-start gap-1">
+          <PriorityBadge priority={victim.currentPriority} />
+          <EsiChip esi={victim.esi} />
+        </div>
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="text-foreground truncate text-[0.8125rem] font-semibold">
             {victim.name?.trim() ? victim.name : 'Belum terdaftar'}
@@ -144,17 +143,17 @@ function VictimCard({
           stale={stale}
         />
         <VitalCell
-          label="SpO2"
+          label="SpO2 (tren)"
           value={victim.spo2}
           unit="%"
           kind="spo2"
           size="md"
           stale={stale}
         />
+        {/* No kind → no severity color: this is the operator's band answer. */}
         <VitalCell
-          label="RR"
-          value={victim.rr}
-          kind="rr"
+          label="RR (operator)"
+          value={rrBandLabel(victim.rr)}
           size="md"
           stale={stale}
         />
@@ -258,8 +257,10 @@ export function CommandContainer() {
   const sortedVictims = useMemo(() => {
     const list = (victims ?? []).slice();
     list.sort((a, b) => {
+      // priorityRank, not a Record lookup: currentPriority is nullable, and
+      // `undefined - undefined` is NaN, which leaves the list unsorted.
       const pr =
-        PRIORITY_RANK[a.currentPriority] - PRIORITY_RANK[b.currentPriority];
+        priorityRank(a.currentPriority) - priorityRank(b.currentPriority);
       if (pr !== 0) return pr;
       return lastUpdateMs(b) - lastUpdateMs(a);
     });

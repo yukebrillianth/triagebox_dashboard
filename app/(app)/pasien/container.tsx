@@ -9,6 +9,8 @@ import { Search } from 'lucide-react';
 
 import {
   EmptyState,
+  EsiChip,
+  PRIORITIES,
   PriorityBadge,
   StaleIndicator,
   VitalCell,
@@ -17,29 +19,22 @@ import {
   formatRelativeWib,
   genderLabel,
   isStale,
+  priorityRank,
+  rrBandLabel,
 } from '@/components/triage';
 import { Chip } from '@/components/ui';
 import { useNodes, useVictims } from '@/hooks/use-api';
 import { useFlash } from '@/hooks/use-realtime';
 import { cn } from '@/lib/cn';
-import type { Priority, Victim } from '@/types';
+import type { Priority, VictimRow } from '@/types';
 
 const PAGE_SIZE = 25;
-
-const PRIORITIES: Priority[] = ['RED', 'YELLOW', 'GREEN', 'BLACK'];
 
 const PRIORITY_LABELS: Record<Priority, string> = {
   RED: 'Merah',
   YELLOW: 'Kuning',
   GREEN: 'Hijau',
   BLACK: 'Hitam',
-};
-
-const PRIORITY_RANK: Record<Priority, number> = {
-  RED: 0,
-  YELLOW: 1,
-  GREEN: 2,
-  BLACK: 3,
 };
 
 const PRIORITY_TONE = {
@@ -49,17 +44,17 @@ const PRIORITY_TONE = {
   BLACK: 'black',
 } as const;
 
-function lastUpdateMs(v: Victim): number {
+function lastUpdateMs(v: VictimRow): number {
   const t = Date.parse(v.lastUpdate);
   return Number.isNaN(t) ? 0 : t;
 }
 
-function VictimRow({
+function VictimRowCells({
   victim,
   nodeName,
   now,
 }: {
-  victim: Victim;
+  victim: VictimRow;
   nodeName: string;
   now: number;
 }) {
@@ -99,7 +94,7 @@ function VictimRow({
       </td>
       <td className="w-[74px] px-3 py-3 text-right">
         <VitalCell
-          label="SpO2"
+          label="SpO2 (tren)"
           value={victim.spo2}
           unit="%"
           kind="spo2"
@@ -116,11 +111,12 @@ function VictimRow({
           stale={stale}
         />
       </td>
-      <td className="w-[66px] px-3 py-3 text-right">
+      {/* No `kind`, so no clinical tone: the value is the band the operator
+          tapped on the device, mapped back from the mid-point on the wire. */}
+      <td className="w-[92px] px-3 py-3 text-right">
         <VitalCell
-          label="RR"
-          value={victim.rr}
-          kind="rr"
+          label="RR (operator)"
+          value={rrBandLabel(victim.rr)}
           variant="inline"
           stale={stale}
         />
@@ -142,7 +138,12 @@ function VictimRow({
         {nodeName}
       </td>
       <td className="px-3 py-3">
-        <PriorityBadge priority={victim.currentPriority} />
+        {/* ESI under the badge, not a column of its own: it only means anything
+            as provenance for that verdict — it is what tells two GREENs apart. */}
+        <div className="flex flex-col items-start gap-1">
+          <PriorityBadge priority={victim.currentPriority} />
+          <EsiChip esi={victim.esi} />
+        </div>
       </td>
       <td className="text-muted w-14 px-3 py-3 text-right font-mono text-xs tabular-nums">
         {formatConfidence(victim.confidence)}
@@ -194,6 +195,8 @@ export function PasienContainer() {
     });
   }, [victims, search, nodeId]);
 
+  // currentPriority is nullable (Priority?): victims without a verdict count
+  // toward no chip — indexing Record<Priority, …> with null would make NaN.
   const priorityCounts = useMemo(() => {
     const counts: Record<Priority, number> = {
       RED: 0,
@@ -202,7 +205,7 @@ export function PasienContainer() {
       BLACK: 0,
     };
     for (const v of baseFiltered) {
-      counts[v.currentPriority] += 1;
+      if (v.currentPriority) counts[v.currentPriority] += 1;
     }
     return counts;
   }, [baseFiltered]);
@@ -211,12 +214,16 @@ export function PasienContainer() {
     let list =
       priorities.size === 0
         ? baseFiltered
-        : baseFiltered.filter((v) => priorities.has(v.currentPriority));
+        : baseFiltered.filter(
+            (v) => v.currentPriority && priorities.has(v.currentPriority)
+          );
 
     list = list.slice().sort((a, b) => {
       if (redFirst) {
-        const ra = PRIORITY_RANK[a.currentPriority];
-        const rb = PRIORITY_RANK[b.currentPriority];
+        // priorityRank handles null (sorts last); a raw Record lookup on a
+        // null key breaks the comparator silently.
+        const ra = priorityRank(a.currentPriority);
+        const rb = priorityRank(b.currentPriority);
         if (ra !== rb) return ra - rb;
       }
       return lastUpdateMs(b) - lastUpdateMs(a);
@@ -407,7 +414,7 @@ export function PasienContainer() {
         <>
           <div className="bg-card rounded-card overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1100px] border-collapse text-left">
+              <table className="w-full min-w-[1080px] border-collapse text-left">
                 <thead className="bg-surface-header sticky top-0 z-10">
                   <tr className="text-muted text-[0.6875rem] font-semibold tracking-[0.08em] uppercase">
                     <th className="w-24 px-5 py-2.5 font-semibold">RFID</th>
@@ -415,16 +422,19 @@ export function PasienContainer() {
                     <th className="w-11 px-3 py-2.5 font-semibold">Usia</th>
                     <th className="w-20 px-3 py-2.5 font-semibold">Gender</th>
                     <th className="w-[74px] px-3 py-2.5 text-right font-semibold">
-                      SpO2
+                      SpO2 (tren)
                     </th>
                     <th className="w-[70px] px-3 py-2.5 text-right font-semibold">
                       HR
                     </th>
-                    <th className="w-[66px] px-3 py-2.5 text-right font-semibold">
-                      RR
+                    <th
+                      className="w-[92px] px-3 py-2.5 text-right font-semibold"
+                      title="Band pernapasan yang diisi operator di perangkat, bukan hasil mikrofon"
+                    >
+                      RR (operator)
                     </th>
                     <th className="w-[82px] px-3 py-2.5 text-right font-semibold">
-                      BP
+                      BP (prediksi ML)
                     </th>
                     <th className="w-[68px] px-3 py-2.5 text-right font-semibold">
                       Bat
@@ -441,7 +451,7 @@ export function PasienContainer() {
                 </thead>
                 <tbody>
                   {pageRows.map((v) => (
-                    <VictimRow
+                    <VictimRowCells
                       key={v.id}
                       victim={v}
                       nodeName={

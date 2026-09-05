@@ -19,7 +19,7 @@ import type {
   ReportSummary,
   Settings,
   Station,
-  Victim,
+  VictimRow,
 } from '@/types';
 
 export const queryKeys = {
@@ -37,13 +37,11 @@ export const queryKeys = {
     all: ['nodes'] as const,
     list: (params?: ListNodesParams) =>
       [...queryKeys.nodes.all, 'list', params ?? {}] as const,
-    detail: (id: string) => [...queryKeys.nodes.all, 'detail', id] as const,
   },
   stations: {
     all: ['stations'] as const,
     list: (params?: ListStationsParams) =>
       [...queryKeys.stations.all, 'list', params ?? {}] as const,
-    detail: (id: string) => [...queryKeys.stations.all, 'detail', id] as const,
     pending: ['stations', 'pending'] as const,
   },
   alerts: {
@@ -69,16 +67,23 @@ export function useKpis(options?: QO<Kpi>) {
   });
 }
 
-export function useVictims(params?: ListVictimsParams, options?: QO<Victim[]>) {
-  return useQuery({
+/**
+ * VictimRow, not Victim: RealtimeProvider patches socket-only vitals into these
+ * caches, so a reader may see them — and must treat them as possibly absent.
+ */
+export function useVictims(
+  params?: ListVictimsParams,
+  options?: QO<VictimRow[]>
+) {
+  return useQuery<VictimRow[], Error>({
     queryKey: queryKeys.victims.list(params),
     queryFn: () => api.listVictims(params),
     ...options,
   });
 }
 
-export function useVictim(id: string, options?: QO<Victim>) {
-  return useQuery({
+export function useVictim(id: string, options?: QO<VictimRow>) {
+  return useQuery<VictimRow, Error>({
     queryKey: queryKeys.victims.detail(id),
     queryFn: () => api.getVictim(id),
     enabled: Boolean(id),
@@ -94,15 +99,6 @@ export function useNodes(params?: ListNodesParams, options?: QO<Node[]>) {
   });
 }
 
-export function useNode(id: string, options?: QO<Node>) {
-  return useQuery({
-    queryKey: queryKeys.nodes.detail(id),
-    queryFn: () => api.getNode(id),
-    enabled: Boolean(id),
-    ...options,
-  });
-}
-
 export function useStations(
   params?: ListStationsParams,
   options?: QO<Station[]>
@@ -110,15 +106,6 @@ export function useStations(
   return useQuery({
     queryKey: queryKeys.stations.list(params),
     queryFn: () => api.listStations(params),
-    ...options,
-  });
-}
-
-export function useStation(id: string, options?: QO<Station>) {
-  return useQuery({
-    queryKey: queryKeys.stations.detail(id),
-    queryFn: () => api.getStation(id),
-    enabled: Boolean(id),
     ...options,
   });
 }

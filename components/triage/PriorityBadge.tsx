@@ -27,7 +27,9 @@ const DOTS: Record<Priority, string> = {
 };
 
 type PriorityBadgeProps = {
-  priority: Priority;
+  /** Nullable: `Victim.currentPriority` is `Priority?`, and a refused model
+   *  verdict must not render as BLACK/EXPECTANT. */
+  priority: Priority | null | undefined;
   /** Larger variant for the detail header. */
   size?: 'sm' | 'md';
   className?: string;
@@ -41,24 +43,24 @@ export function PriorityBadge({
   return (
     <span
       data-testid="priority-badge"
-      data-priority={priority}
+      data-priority={priority ?? 'NONE'}
       className={cn(
         'inline-flex items-center gap-[7px] rounded-md font-semibold print:border print:border-black print:bg-transparent print:text-black',
         size === 'sm'
           ? 'px-2.5 py-[3px] text-[0.6875rem]'
           : 'px-3.5 py-1.5 text-[0.8125rem]',
-        STYLES[priority],
+        priority ? STYLES[priority] : 'text-muted bg-surface-muted',
         className
       )}
     >
       <span
         className={cn(
           'inline-block size-2 shrink-0 print:size-2 print:bg-black',
-          DOTS[priority]
+          priority ? DOTS[priority] : 'bg-control-hover'
         )}
         aria-hidden
       />
-      {LABELS[priority]}
+      {priority ? LABELS[priority] : 'Belum ada'}
     </span>
   );
 }

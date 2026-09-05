@@ -61,14 +61,17 @@ test.describe('Report / Settings / Status / Analytics / Perangkat', () => {
     await expect(page.getByTestId('tab-station')).toBeVisible();
     await expect(page.getByTestId('tab-node')).toBeVisible();
 
+    // There is no "+ Node" / "+ Station": ids come from station adoption, so
+    // the node tab's only control is the station filter.
     await page.getByTestId('tab-node').click();
-    await expect(page.getByTestId('btn-create-node')).toBeVisible({
+    await expect(page.getByTestId('filter-node-station')).toBeVisible({
       timeout: 5_000,
     });
 
     await page.getByTestId('tab-station').click();
-    await expect(page.getByTestId('btn-create-station')).toBeVisible({
-      timeout: 5_000,
-    });
+    await expect(page.getByTestId('tab-station')).toHaveAttribute(
+      'data-active',
+      'true'
+    );
   });
 });

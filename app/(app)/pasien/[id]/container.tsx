@@ -14,13 +14,17 @@ import { ArrowLeftIcon } from 'lucide-react';
 import {
   ConfidenceBar,
   EmptyState,
+  EsiChip,
   PriorityBadge,
   StaleIndicator,
   VitalCell,
+  asPriority,
   formatBp,
   formatConfidence,
   formatRelativeWib,
+  genderLabel,
   isStale,
+  rrBandLabel,
 } from '@/components/triage';
 import {
   Button,
@@ -41,14 +45,7 @@ import {
   type RegistrasiForm,
   type RegistrasiFormValues,
 } from '@/schemas/victim';
-import type { Priority, TriageHistory } from '@/types';
-
-const PRIORITY_SET = new Set<string>(['RED', 'YELLOW', 'GREEN', 'BLACK']);
-
-function asPriority(p: string | null | undefined): Priority | null {
-  if (!p || !PRIORITY_SET.has(p)) return null;
-  return p as Priority;
-}
+import type { TriageHistory } from '@/types';
 
 function formDefaults(v: {
   name?: string | null;
@@ -199,6 +196,8 @@ export function PasienDetailContainer() {
 
   const stale = isStale(victim.lastUpdate, 45_000, now);
   const needsReg = !victim.name?.trim();
+  // The socket patch first, the last stored reading as the fallback: only this
+  // page has one, because /api/victims/:id carries no vitals.
   const latestVital = vitalsHistory?.[0];
   const hr = victim.hr ?? latestVital?.hr;
   const spo2 = victim.spo2 ?? latestVital?.spo2;
@@ -206,6 +205,7 @@ export function PasienDetailContainer() {
   const bpSys = victim.bpSys ?? latestVital?.bpSys;
   const bpDia = victim.bpDia ?? latestVital?.bpDia;
   const battery = victim.battery ?? latestVital?.battery;
+  const esi = victim.esi ?? latestVital?.esi;
   const reasons = victim.reasons?.length
     ? victim.reasons
     : (latestVital?.reasons ?? []);
@@ -251,6 +251,22 @@ export function PasienDetailContainer() {
               {victim.rfid}
             </span>
             <span className="mx-1.5 opacity-40">·</span>
+            {/* Age/gender arrive from the operator's band answer on the device
+                (or an operator PATCH); '-' means never asked, not 0/unknown. */}
+            {victim.age != null ? (
+              <>
+                <span className="text-foreground">{victim.age} th</span>
+                <span className="mx-1.5 opacity-40">·</span>
+              </>
+            ) : null}
+            {victim.gender != null ? (
+              <>
+                <span className="text-foreground">
+                  {genderLabel(victim.gender)}
+                </span>
+                <span className="mx-1.5 opacity-40">·</span>
+              </>
+            ) : null}
             <span className="tabular-nums">
               {formatRelativeWib(victim.lastUpdate, now)}
             </span>
@@ -258,7 +274,12 @@ export function PasienDetailContainer() {
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
-          <PriorityBadge priority={victim.currentPriority} size="md" />
+          {/* ESI rides with the badge it is provenance for: the colour collapses
+              ESI 3/4/5 into GREEN, so this chip is what keeps them apart. */}
+          <div className="flex min-w-0 flex-col items-start gap-1">
+            <PriorityBadge priority={victim.currentPriority} size="md" />
+            <EsiChip esi={esi} />
+          </div>
           <div className="min-w-24">
             <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.06em] uppercase">
               Confidence
@@ -304,25 +325,28 @@ export function PasienDetailContainer() {
                 data-testid="vital-hr"
               />
               <VitalCell
-                label="SpO2"
+                label="SpO2 (tren)"
                 value={spo2}
                 unit="%"
                 kind="spo2"
                 stale={stale}
                 data-testid="vital-spo2"
               />
+              {/* No `kind`, so no severity color: the value is the band the
+                  operator tapped (the firmware sends its mid-point, mapped back
+                  here), not a rate anyone counted. */}
               <VitalCell
-                label="RR"
-                value={rr}
-                unit="/m"
-                kind="rr"
+                label="RR (operator)"
+                value={rrBandLabel(rr)}
                 stale={stale}
                 data-testid="vital-rr"
               />
-              {/* Mirrors VitalCell's lg variant; BP has no single numeric value. */}
+              {/* Mirrors VitalCell's lg variant; BP has no single numeric value.
+                  "prediksi ML": the model, not a cuff — the only comparison
+                  done so far read ~27 mmHg low on both numbers. */}
               <div className="bg-surface-input rounded-control flex min-w-0 flex-col gap-[5px] px-3.5 py-3">
                 <span className="text-muted text-[0.6875rem] font-semibold tracking-[0.06em] uppercase">
-                  BP
+                  BP (prediksi ML)
                 </span>
                 <span
                   data-testid="vital-bp"
@@ -392,13 +416,13 @@ export function PasienDetailContainer() {
                         HR
                       </th>
                       <th className="px-3 py-2.5 text-right font-semibold">
-                        SpO2
+                        SpO2 (tren)
                       </th>
                       <th className="px-3 py-2.5 text-right font-semibold">
-                        RR
+                        RR (operator)
                       </th>
                       <th className="px-3 py-2.5 text-right font-semibold">
-                        BP
+                        BP (prediksi ML)
                       </th>
                       <th className="px-3 py-2.5 text-right font-semibold">
                         Bat
@@ -406,6 +430,7 @@ export function PasienDetailContainer() {
                       <th className="px-[18px] py-2.5 font-semibold sm:px-[22px]">
                         Prio
                       </th>
+                      <th className="px-3 py-2.5 font-semibold">ESI</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -419,7 +444,7 @@ export function PasienDetailContainer() {
                           className="border-border border-b last:border-0"
                         >
                           <td className="text-muted px-[18px] py-2.5 font-mono text-xs whitespace-nowrap tabular-nums sm:px-[22px]">
-                            {formatRelativeWib(r.deviceTs ?? r.createdAt, now)}
+                            {formatRelativeWib(r.deviceTs ?? r.receivedAt, now)}
                           </td>
                           <td className="px-3 py-2.5 text-right">
                             <VitalCell
@@ -437,13 +462,9 @@ export function PasienDetailContainer() {
                               variant="inline"
                             />
                           </td>
-                          <td className="px-3 py-2.5 text-right">
-                            <VitalCell
-                              label="RR"
-                              value={r.rr}
-                              kind="rr"
-                              variant="inline"
-                            />
+                          {/* Same honesty as the list: the band, not a count. */}
+                          <td className="text-muted px-3 py-2.5 text-right font-mono text-xs whitespace-nowrap tabular-nums">
+                            {rrBandLabel(r.rr) ?? '-'}
                           </td>
                           <td className="text-muted px-3 py-2.5 text-right font-mono text-xs whitespace-nowrap tabular-nums">
                             {formatBp(r.bpSys, r.bpDia)}
@@ -462,6 +483,9 @@ export function PasienDetailContainer() {
                             ) : (
                               <span className="text-dim text-xs">-</span>
                             )}
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <EsiChip esi={r.esi} />
                           </td>
                         </tr>
                       );
