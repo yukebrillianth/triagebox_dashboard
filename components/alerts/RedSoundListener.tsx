@@ -44,7 +44,11 @@ function buildRedAlertWavDataUri(): string {
     const pulse = Math.sin(2 * Math.PI * 8 * t) > 0 ? 1 : 0.35;
     const sample = (toneA * 0.55 + toneB * 0.45) * envelope * pulse * 0.85;
     const intSample = Math.max(-1, Math.min(1, sample));
-    view.setInt16(44 + i * 2, intSample < 0 ? intSample * 0x8000 : intSample * 0x7fff, true);
+    view.setInt16(
+      44 + i * 2,
+      intSample < 0 ? intSample * 0x8000 : intSample * 0x7fff,
+      true
+    );
   }
 
   const bytes = new Uint8Array(buffer);
@@ -154,14 +158,14 @@ export function RedSoundListener() {
         audio.volume = 1;
         await audio.play();
       } catch (primaryError) {
-        console.warn('TriageBox RED sound HTMLAudio playback failed.', primaryError);
+        console.warn(
+          'TriageBox RED sound HTMLAudio playback failed.',
+          primaryError
+        );
         try {
           await playFallbackTone();
         } catch (fallbackError) {
-          console.error(
-            'TriageBox RED sound playback failed.',
-            fallbackError
-          );
+          console.error('TriageBox RED sound playback failed.', fallbackError);
         }
       }
     };

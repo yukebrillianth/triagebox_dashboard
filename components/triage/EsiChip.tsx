@@ -11,7 +11,7 @@ type EsiChipProps = {
 /**
  * The model's raw ESI, shown beside the triage colour it was collapsed into.
  *
- * Provenance, not severity — hence ConfidenceBar's idiom (mono, tabular, the
+ * Provenance, not severity — hence the mono/tabular idiom rather than
  * `surface-muted` track) rather than PriorityBadge's tone tints: the device maps
  * ESI 3, 4 and 5 all to GREEN, so without this a walking-wounded 5 and a
  * could-deteriorate 3 are the same badge. It carries no colour of its own

@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react';
 
 import {
+  ageLabel,
   EmptyState,
   PRIORITIES,
   PriorityBadge,
@@ -334,7 +335,7 @@ export function ReportContainer() {
                         {v.name?.trim() ? v.name : '-'}
                       </td>
                       <td className="text-foreground-soft px-3.5 py-2.5 text-right font-mono text-xs tabular-nums print:border print:border-black print:px-1.5 print:py-1 print:text-black">
-                        {v.age != null ? v.age : '-'}
+                        {ageLabel(v.age)}
                       </td>
                       {/* '-' when the Age screen was never answered; the wire's
                           0 sentinel is already null by the time it lands here. */}

@@ -123,6 +123,38 @@ export function rrBandLabel(rr?: number | null): string | null {
   return RR_BAND_BY_MIDPOINT[rr] ?? String(rr);
 }
 
+/**
+ * Age back as its band, for the same reason as rrBandLabel: the node sends the
+ * band's mid-point the operator picked (pinned to tb_triage.c), so "31 th"
+ * would fake a precision nobody has. A real operator-typed age (any other
+ * value) passes through as a number. Falls back to the number when the backend
+ * cannot tell us the value came from a band — an operator who typed exactly one
+ * of these mid-points renders as the band.
+ */
+const AGE_BAND_BY_MIDPOINT: Record<number, string> = {
+  12: '6–17',
+  31: '18–45',
+  53: '46–60',
+  70: '>60',
+};
+
+export function ageLabel(age?: number | null): string {
+  if (age == null || Number.isNaN(age)) return '-';
+  return AGE_BAND_BY_MIDPOINT[age] ?? String(age);
+}
+
+/** Clock time (HH:MM WIB) for measurement stamps like "TD diukur 12:04". */
+export function formatTimeWib(iso: string | null | undefined): string {
+  if (!iso) return '-';
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return '-';
+  return new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(t));
+}
+
 /** Normalize 0–1 or 0–100 confidence to 0–100 percent number. */
 export function normalizeConfidence(c?: number | null): number | null {
   if (c == null || Number.isNaN(c)) return null;

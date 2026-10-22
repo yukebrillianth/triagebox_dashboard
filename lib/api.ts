@@ -1,7 +1,4 @@
 // Data fetching: React Query (not SWR) — see providers/QueryProvider + hooks/use-api.
-import { getApiBaseUrl } from './config';
-import { HttpError } from './http-error';
-
 import type {
   Activity,
   AdoptStationInput,
@@ -15,6 +12,7 @@ import type {
   ListStationsParams,
   ListVictimsParams,
   Node,
+  OverrideVictimInput,
   PendingStation,
   ReportSummary,
   Settings,
@@ -25,6 +23,9 @@ import type {
   Victim,
   VitalReading,
 } from '@/types';
+
+import { getApiBaseUrl } from './config';
+import { HttpError } from './http-error';
 
 const DEFAULT_TIMEOUT = 15_000;
 
@@ -152,6 +153,13 @@ export const api = {
 
   listVictims(params?: ListVictimsParams): Promise<Victim[]> {
     return apiFetch<Victim[]>(`/api/victims${toQuery(params)}`);
+  },
+
+  overrideVictim(id: string, body: OverrideVictimInput): Promise<Victim> {
+    return apiFetch<Victim>(`/api/victims/${encodeURIComponent(id)}/override`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
   },
 
   getVictim(id: string): Promise<Victim> {

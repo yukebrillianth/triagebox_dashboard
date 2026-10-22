@@ -12,7 +12,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeftIcon } from 'lucide-react';
 
 import {
-  ConfidenceBar,
+  ageLabel,
   EmptyState,
   EsiChip,
   PriorityBadge,
@@ -22,6 +22,7 @@ import {
   formatBp,
   formatConfidence,
   formatRelativeWib,
+  formatTimeWib,
   genderLabel,
   isStale,
   rrBandLabel,
@@ -31,6 +32,8 @@ import {
   Card,
   CardBody,
   CardHeader,
+  Dialog,
+  DialogFooter,
   Field,
   Input,
   Select,
@@ -45,23 +48,174 @@ import {
   type RegistrasiForm,
   type RegistrasiFormValues,
 } from '@/schemas/victim';
-import type { TriageHistory } from '@/types';
+import type { Priority, TriageHistory, VictimStatus } from '@/types';
 
 function formDefaults(v: {
   name?: string | null;
   age?: number | null;
   gender?: 'M' | 'F' | 'U' | null;
   notes?: string | null;
+  nik?: string | null;
+  address?: string | null;
+  familyContactName?: string | null;
+  familyContactPhone?: string | null;
+  chiefComplaint?: string | null;
 }): RegistrasiFormValues {
   return {
     name: v.name ?? '',
     age: v.age ?? null,
     gender: v.gender ?? null,
     notes: v.notes ?? '',
+    nik: v.nik ?? '',
+    address: v.address ?? '',
+    familyContactName: v.familyContactName ?? '',
+    familyContactPhone: v.familyContactPhone ?? '',
+    chiefComplaint: v.chiefComplaint ?? '',
   };
 }
 
+const PRIORITY_LABELS: Record<Priority, string> = {
+  RED: 'Merah',
+  YELLOW: 'Kuning',
+  GREEN: 'Hijau',
+  BLACK: 'Hitam',
+};
+
+const STATUS_LABELS: Record<VictimStatus, string> = {
+  ACTIVE: 'Aktif',
+  REFERRED: 'Dirujuk',
+  DISCHARGED: 'Pulang',
+  DECEASED: 'Meninggal',
+};
+
+/** A band label like "6–17" contains no "th"; a real number does. */
+const AGE_IS_BAND = /[–-]/;
+
+/**
+ * Confirmation + mandatory reason for an operator override. BLACK only ever
+ * comes from a human — the model never sends it — so this dialog is the gate.
+ */
+function OverrideDialog({
+  priority,
+  onClose,
+  onConfirm,
+}: {
+  priority: Priority | null;
+  onClose: () => void;
+  onConfirm: (priority: Priority, reason: string) => void;
+}) {
+  const [reason, setReason] = useState('');
+  return (
+    <Dialog
+      open={priority !== null}
+      onClose={onClose}
+      title="Keputusan petugas"
+      description="Override tidak ditimpa otomatis oleh pembacaan alat berikutnya."
+      data-testid="dialog-override"
+    >
+      <form
+        noValidate
+        className="space-y-3.5"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (priority && reason.trim()) onConfirm(priority, reason.trim());
+        }}
+      >
+        <p className="text-[0.8125rem]">
+          <span className="text-muted">Ubah kategori ke </span>
+          <span className="text-foreground font-semibold">
+            {priority ? PRIORITY_LABELS[priority] : ''}
+          </span>
+        </p>
+        <Field label="Alasan (wajib)" htmlFor="override-reason">
+          <Textarea
+            id="override-reason"
+            data-testid="input-override-reason"
+            rows={3}
+            maxLength={512}
+            placeholder="Alasan keputusan petugas"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+        </Field>
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Batal
+          </Button>
+          <Button
+            type="submit"
+            data-testid="btn-confirm-override"
+            disabled={!reason.trim()}
+          >
+            Simpan
+          </Button>
+        </DialogFooter>
+      </form>
+    </Dialog>
+  );
+}
+
+/** Referral destination. DISCHARGED/DECEASED confirm in the click handler. */
+function StatusDialog({
+  status,
+  onClose,
+  onConfirm,
+}: {
+  status: VictimStatus | null;
+  onClose: () => void;
+  onConfirm: (status: VictimStatus, destination: string) => void;
+}) {
+  const [destination, setDestination] = useState('');
+  if (status !== 'REFERRED') return null;
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title="Rujuk pasien"
+      data-testid="dialog-refer"
+    >
+      <form
+        noValidate
+        className="space-y-3.5"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (destination.trim()) onConfirm('REFERRED', destination.trim());
+        }}
+      >
+        <Field
+          label="Tujuan rujukan"
+          htmlFor="referral-destination"
+          hint="Pasien keluar dari daftar aktif setelah dirujuk."
+        >
+          <Input
+            id="referral-destination"
+            data-testid="input-referral-destination"
+            maxLength={256}
+            placeholder="RS rujukan / faskes tujuan"
+            value={destination}
+            onChange={(e) => setDestination(e.target.value)}
+          />
+        </Field>
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Batal
+          </Button>
+          <Button
+            type="submit"
+            data-testid="btn-confirm-refer"
+            disabled={!destination.trim()}
+          >
+            Rujuk
+          </Button>
+        </DialogFooter>
+      </form>
+    </Dialog>
+  );
+}
+
 export function PasienDetailContainer() {
+  const [overrideTarget, setOverrideTarget] = useState<Priority | null>(null);
+  const [statusTarget, setStatusTarget] = useState<VictimStatus | null>(null);
   const params = useParams<{ id: string }>();
   const id = typeof params?.id === 'string' ? params.id : '';
   const queryClient = useQueryClient();
@@ -110,6 +264,11 @@ export function PasienDetailContainer() {
         age: values.age ?? null,
         gender: values.gender ?? null,
         notes: values.notes?.trim() ? values.notes.trim() : null,
+        nik: values.nik ?? null,
+        address: values.address ?? null,
+        familyContactName: values.familyContactName ?? null,
+        familyContactPhone: values.familyContactPhone ?? null,
+        chiefComplaint: values.chiefComplaint ?? null,
       });
       queryClient.setQueryData(queryKeys.victims.detail(id), updated);
       queryClient.setQueriesData(
@@ -132,12 +291,50 @@ export function PasienDetailContainer() {
             field === 'name' ||
             field === 'age' ||
             field === 'gender' ||
-            field === 'notes'
+            field === 'notes' ||
+            field === 'nik' ||
+            field === 'address' ||
+            field === 'familyContactName' ||
+            field === 'familyContactPhone' ||
+            field === 'chiefComplaint'
           ) {
-            setError(field, { type: 'server', message });
+            setError(field as keyof RegistrasiFormValues, {
+              type: 'server',
+              message,
+            });
           }
         }
       }
+      toast.error(getErrorMessage(err));
+    }
+  }
+
+  async function onOverride(priority: Priority, reason: string) {
+    if (!id) return;
+    try {
+      const updated = await api.overrideVictim(id, { priority, reason });
+      queryClient.setQueryData(queryKeys.victims.detail(id), updated);
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.victims.triageHistory(id),
+      });
+      toast.success('Keputusan petugas tersimpan');
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  }
+
+  async function onStatus(status: VictimStatus, destination: string) {
+    if (!id) return;
+    try {
+      const updated = await api.patchVictim(id, {
+        status,
+        referralDestination: status === 'REFERRED' ? destination : null,
+      });
+      queryClient.setQueryData(queryKeys.victims.detail(id), updated);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.victims.all });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.kpis });
+      toast.success('Status pasien diperbarui');
+    } catch (err) {
       toast.error(getErrorMessage(err));
     }
   }
@@ -206,9 +403,8 @@ export function PasienDetailContainer() {
   const bpDia = victim.bpDia ?? latestVital?.bpDia;
   const battery = victim.battery ?? latestVital?.battery;
   const esi = victim.esi ?? latestVital?.esi;
-  const reasons = victim.reasons?.length
-    ? victim.reasons
-    : (latestVital?.reasons ?? []);
+  const hrSource = victim.hrSource ?? latestVital?.hrSource;
+  const bpMeasuredAt = victim.bpMeasuredAt ?? latestVital?.bpMeasuredAt;
 
   return (
     <div data-testid="page-pasien-detail" className="space-y-3.5">
@@ -255,7 +451,13 @@ export function PasienDetailContainer() {
                 (or an operator PATCH); '-' means never asked, not 0/unknown. */}
             {victim.age != null ? (
               <>
-                <span className="text-foreground">{victim.age} th</span>
+                <span
+                  className="text-foreground"
+                  title={`Nilai terkirim: ${victim.age}`}
+                >
+                  {ageLabel(victim.age)}
+                  {AGE_IS_BAND.test(String(victim.age)) ? '' : ' th'}
+                </span>
                 <span className="mx-1.5 opacity-40">·</span>
               </>
             ) : null}
@@ -280,14 +482,14 @@ export function PasienDetailContainer() {
             <PriorityBadge priority={victim.currentPriority} size="md" />
             <EsiChip esi={esi} />
           </div>
-          <div className="min-w-24">
-            <span className="text-muted block text-[0.6875rem] font-semibold tracking-[0.06em] uppercase">
-              Confidence
+          {victim.deviceDiffersFromOperator ? (
+            <span
+              data-testid="badge-device-differs"
+              className="text-triage-yellow bg-triage-yellow/12 rounded-md px-2.5 py-[3px] text-[0.6875rem] font-semibold"
+            >
+              Kategori alat berbeda dari keputusan petugas
             </span>
-            <span className="text-foreground font-mono text-[0.9375rem] tabular-nums">
-              {formatConfidence(victim.confidence)}
-            </span>
-          </div>
+          ) : null}
           {victim.currentNodeId ? (
             <Link
               href={`/perangkat?node=${encodeURIComponent(victim.currentNodeId)}`}
@@ -362,6 +564,22 @@ export function PasienDetailContainer() {
                     </span>
                   ) : null}
                 </span>
+                {/* BP is latched, not live (brief butir 5): its own stamp keeps
+                    an old number from reading as a current measurement. */}
+                <span
+                  data-testid="bp-measured-at"
+                  className={cn(
+                    'text-[0.6875rem] font-medium tabular-nums',
+                    // 5 minutes old reads as stale next to live HR/SpO2.
+                    bpMeasuredAt && now - Date.parse(bpMeasuredAt) > 300_000
+                      ? 'text-triage-yellow'
+                      : 'text-dim'
+                  )}
+                >
+                  {bpMeasuredAt
+                    ? `TD diukur ${formatTimeWib(bpMeasuredAt)}`
+                    : 'TD belum terukur'}
+                </span>
               </div>
               <VitalCell
                 label="Battery"
@@ -374,28 +592,155 @@ export function PasienDetailContainer() {
             </div>
           </section>
 
+          {/* Operator actions (brief butir 7): BLACK comes only from a human. */}
           <section className="bg-card rounded-card px-[18px] py-[18px] sm:px-[22px]">
             <h2 className="text-foreground mb-3 text-[0.9375rem] font-semibold">
-              ML Explain
+              Keputusan petugas
             </h2>
-            <ConfidenceBar value={victim.confidence} className="mb-3.5" />
-            {reasons.length === 0 ? (
-              <p className="text-dim text-[0.8125rem]">
-                Belum ada alasan triage.
+            {victim.operatorOverride ? (
+              <p className="text-muted mb-3 text-[0.8125rem]">
+                Override terakhir:{' '}
+                <span className="text-foreground font-semibold">
+                  {PRIORITY_LABELS[victim.operatorOverride.priority]}
+                </span>{' '}
+                · {victim.operatorOverride.reason} ·{' '}
+                <span className="font-mono text-xs tabular-nums">
+                  {formatRelativeWib(victim.operatorOverride.at, now)}
+                </span>
               </p>
-            ) : (
-              <ul className="flex flex-wrap gap-2">
-                {reasons.map((r, i) => (
-                  <li
-                    key={`${i}-${r.slice(0, 24)}`}
-                    className="bg-surface-header text-muted rounded-md px-2.5 py-1.5 text-xs leading-snug"
-                  >
-                    {r}
-                  </li>
-                ))}
-              </ul>
-            )}
+            ) : null}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                data-testid="btn-override-red"
+                onClick={() => setOverrideTarget('RED')}
+              >
+                Ubah ke Merah
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                data-testid="btn-override-yellow"
+                onClick={() => setOverrideTarget('YELLOW')}
+              >
+                Ubah ke Kuning
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                data-testid="btn-override-green"
+                onClick={() => setOverrideTarget('GREEN')}
+              >
+                Ubah ke Hijau
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                data-testid="btn-mark-black"
+                onClick={() => setOverrideTarget('BLACK')}
+                className="text-muted hover:text-triage-red-ink"
+              >
+                Tandai Hitam
+              </Button>
+            </div>
           </section>
+
+          {/* Status flow (brief butir 7): non-ACTIVE leaves the active list. */}
+          <section className="bg-card rounded-card px-[18px] py-[18px] sm:px-[22px]">
+            <h2 className="text-foreground mb-3 text-[0.9375rem] font-semibold">
+              Status pasien
+            </h2>
+            <p className="text-muted mb-3 text-[0.8125rem]">
+              Status:{' '}
+              <span className="text-foreground font-semibold">
+                {STATUS_LABELS[victim.status ?? 'ACTIVE']}
+              </span>
+              {victim.status === 'REFERRED' && victim.referralDestination
+                ? ` → ${victim.referralDestination}`
+                : null}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                data-testid="btn-refer"
+                onClick={() => {
+                  if (confirmNonActive('REFERRED')) setStatusTarget('REFERRED');
+                }}
+              >
+                Rujuk
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                data-testid="btn-discharge"
+                onClick={() => {
+                  if (confirmNonActive('DISCHARGED'))
+                    void onStatus('DISCHARGED', '');
+                }}
+              >
+                Pulang
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                data-testid="btn-deceased"
+                onClick={() => {
+                  if (confirmNonActive('DECEASED'))
+                    void onStatus('DECEASED', '');
+                }}
+                className="text-muted hover:text-triage-red-ink"
+              >
+                Meninggal
+              </Button>
+            </div>
+          </section>
+
+          {/* Technical provenance, closed by default (brief butir 8): the model
+              score is not a calibrated clinical certainty, so it must not read
+              as one next to the vitals. */}
+          <details
+            data-testid="technical-info"
+            className="bg-card rounded-card px-[18px] py-[18px] sm:px-[22px]"
+          >
+            <summary className="text-foreground cursor-pointer text-[0.9375rem] font-semibold">
+              Info teknis
+            </summary>
+            <dl className="text-muted mt-3 space-y-1.5 text-[0.8125rem]">
+              <div className="flex justify-between gap-4">
+                <dt>Skor model (tidak terkalibrasi)</dt>
+                <dd className="text-foreground font-mono tabular-nums">
+                  {formatConfidence(victim.confidence)}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt>ESI mentah</dt>
+                <dd className="text-foreground font-mono tabular-nums">
+                  {esi == null ? '-' : `ESI ${esi}`}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt>Status perangkat</dt>
+                <dd
+                  className={cn(
+                    'font-mono tabular-nums',
+                    stale ? 'text-triage-yellow' : 'text-triage-green'
+                  )}
+                >
+                  {stale ? 'Data lama' : 'Live'}
+                </dd>
+              </div>
+              {hrSource ? (
+                <div className="flex justify-between gap-4">
+                  <dt>Sumber HR</dt>
+                  <dd className="text-foreground font-mono tabular-nums">
+                    {hrSource === 'ECG' ? 'EKG' : 'PPG'}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          </details>
 
           <section
             data-testid="vitals-history"
@@ -587,6 +932,88 @@ export function PasienDetailContainer() {
                   />
                 </Field>
 
+                {/* Identity fields (brief butir 6): filled here by the operator,
+                    never over LoRa. NIK never appears in lists — only masked. */}
+                <Field
+                  label="NIK"
+                  htmlFor="input-nik"
+                  hint="16 digit angka; hanya tampil di halaman ini."
+                  error={errors.nik?.message}
+                >
+                  <Input
+                    id="input-nik"
+                    data-testid="input-nik"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={16}
+                    className="font-mono tabular-nums"
+                    placeholder="-"
+                    {...register('nik')}
+                  />
+                </Field>
+
+                <Field
+                  label="Alamat / asal"
+                  htmlFor="input-address"
+                  error={errors.address?.message}
+                >
+                  <Textarea
+                    id="input-address"
+                    data-testid="input-address"
+                    rows={2}
+                    maxLength={512}
+                    placeholder="Desa/kecamatan asal"
+                    {...register('address')}
+                  />
+                </Field>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Field
+                    label="Nama keluarga"
+                    htmlFor="input-family-name"
+                    error={errors.familyContactName?.message}
+                  >
+                    <Input
+                      id="input-family-name"
+                      data-testid="input-family-name"
+                      type="text"
+                      maxLength={128}
+                      placeholder="-"
+                      {...register('familyContactName')}
+                    />
+                  </Field>
+                  <Field
+                    label="Telepon keluarga"
+                    htmlFor="input-family-phone"
+                    error={errors.familyContactPhone?.message}
+                  >
+                    <Input
+                      id="input-family-phone"
+                      data-testid="input-family-phone"
+                      type="tel"
+                      maxLength={32}
+                      className="font-mono tabular-nums"
+                      placeholder="-"
+                      {...register('familyContactPhone')}
+                    />
+                  </Field>
+                </div>
+
+                <Field
+                  label="Keluhan utama"
+                  htmlFor="input-chief-complaint"
+                  error={errors.chiefComplaint?.message}
+                >
+                  <Textarea
+                    id="input-chief-complaint"
+                    data-testid="input-chief-complaint"
+                    rows={2}
+                    maxLength={512}
+                    placeholder="Keluhan / cedera utama"
+                    {...register('chiefComplaint')}
+                  />
+                </Field>
+
                 <div className="flex items-center justify-end gap-2 pt-1">
                   <Button
                     type="submit"
@@ -622,6 +1049,18 @@ export function PasienDetailContainer() {
                         aria-hidden
                       />
                       <div className="flex flex-wrap items-center gap-2">
+                        {/* Source (brief butir 7): operator decisions carry a
+                            reason; device transitions do not. */}
+                        <span
+                          className={cn(
+                            'rounded-md px-2 py-[2px] text-[0.625rem] font-semibold tracking-[0.04em] uppercase',
+                            h.source === 'OPERATOR'
+                              ? 'bg-accent/12 text-accent'
+                              : 'bg-surface-muted text-muted'
+                          )}
+                        >
+                          {h.source === 'OPERATOR' ? 'Petugas' : 'Alat'}
+                        </span>
                         {from ? <PriorityBadge priority={from} /> : null}
                         {from ? (
                           <span className="text-dim text-xs">→</span>
@@ -633,13 +1072,13 @@ export function PasienDetailContainer() {
                             {h.toPriority}
                           </span>
                         )}
-                        <span className="text-muted font-mono text-xs tabular-nums">
-                          {formatConfidence(h.confidence)}
-                        </span>
                       </div>
                       <p className="text-dim mt-1 font-mono text-[0.6875rem] tabular-nums">
                         {formatRelativeWib(h.createdAt, now)}
                       </p>
+                      {h.source === 'OPERATOR' && h.reason ? (
+                        <p className="text-muted mt-1 text-xs">{h.reason}</p>
+                      ) : null}
                       {h.reasons?.length ? (
                         <p className="text-muted mt-1 line-clamp-2 text-xs">
                           {h.reasons.join(' · ')}
@@ -653,6 +1092,30 @@ export function PasienDetailContainer() {
           </section>
         </div>
       </div>
+
+      <OverrideDialog
+        priority={overrideTarget}
+        onClose={() => setOverrideTarget(null)}
+        onConfirm={(p, reason) => {
+          setOverrideTarget(null);
+          void onOverride(p, reason);
+        }}
+      />
+      <StatusDialog
+        status={statusTarget}
+        onClose={() => setStatusTarget(null)}
+        onConfirm={(s, destination) => {
+          setStatusTarget(null);
+          void onStatus(s, destination);
+        }}
+      />
     </div>
+  );
+}
+
+function confirmNonActive(status: VictimStatus): boolean {
+  if (status === 'REFERRED') return true;
+  return window.confirm(
+    `Tandai pasien ${STATUS_LABELS[status]}? Pasien keluar dari daftar aktif.`
   );
 }

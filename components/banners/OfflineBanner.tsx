@@ -9,7 +9,7 @@ export function OfflineBanner() {
     <div
       role="alert"
       data-testid="banner-offline"
-      className="bg-triage-red/15 text-triage-red-ink border-triage-red/40 print:hidden shrink-0 border-b px-4 py-2 text-sm"
+      className="bg-triage-red/15 text-triage-red-ink border-triage-red/40 shrink-0 border-b px-4 py-2 text-sm print:hidden"
     >
       Koneksi terputus. Mencoba menghubungkan ulang.
     </div>

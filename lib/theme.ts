@@ -2,7 +2,10 @@ export type ThemeMode = 'light' | 'dark';
 
 export const THEME_STORAGE_KEY = 'triagebox.theme';
 
-export function resolveTheme(stored: string | null, prefersDark: boolean): ThemeMode {
+export function resolveTheme(
+  stored: string | null,
+  prefersDark: boolean
+): ThemeMode {
   if (stored === 'light' || stored === 'dark') return stored;
   return prefersDark ? 'dark' : 'light';
 }

@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import toast from 'react-hot-toast';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
 
 import {
   Button,
@@ -25,6 +25,7 @@ import {
   type SettingsForm,
   type SettingsFormValues,
 } from '@/schemas/settings';
+import type { TimingSettings } from '@/types';
 
 function formDefaults(s?: Record<string, string>): SettingsFormValues {
   return {
@@ -39,6 +40,11 @@ export function SettingsContainer() {
   const { data: settings, isLoading, isError, error, refetch } = useSettings();
   const { soundEnabled, setSoundEnabled } = useRealtime();
   const apiUrl = getApiBaseUrl();
+
+  // The timing block rides the same GET /api/settings response under its own
+  // key; absent until the backend ships it (all fields render '-' then).
+  const timing = (settings as unknown as { timing?: TimingSettings } | null)
+    ?.timing;
 
   const {
     register,
@@ -207,6 +213,57 @@ export function SettingsContainer() {
                 </Button>
               </div>
             </form>
+          </CardBody>
+        </Card>
+
+        {/* Read-only timing (brief butir 4): shows the operator how fresh the
+            data can be. Interval klasifikasi ulang lives on the node, not the
+            backend, so it renders as text when absent. */}
+        <Card data-testid="settings-timing" className="lg:col-span-2">
+          <CardHeader
+            title="Interval waktu sistem"
+            description="Read-only, diatur di firmware/backend. Supaya operator tahu seberapa segar data."
+          />
+          <CardBody className="p-[22px]">
+            <dl className="grid gap-3 text-[0.8125rem] sm:grid-cols-2 sm:gap-x-10">
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted">Periode poll station</dt>
+                <dd
+                  data-testid="timing-poll"
+                  className="text-foreground font-mono tabular-nums"
+                >
+                  {timing?.pollPeriodSec != null
+                    ? `${timing.pollPeriodSec} s`
+                    : '-'}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted">Ambang node offline</dt>
+                <dd
+                  data-testid="timing-offline"
+                  className="text-foreground font-mono tabular-nums"
+                >
+                  {timing?.nodeOfflineSec != null
+                    ? `${timing.nodeOfflineSec} s`
+                    : '-'}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted">Ambang link basi (node)</dt>
+                <dd
+                  data-testid="timing-link-stale"
+                  className="text-foreground font-mono tabular-nums"
+                >
+                  {timing?.linkStaleSec != null
+                    ? `${timing.linkStaleSec} s`
+                    : '-'}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted">Interval klasifikasi ulang</dt>
+                <dd className="text-foreground">Diatur di node</dd>
+              </div>
+            </dl>
           </CardBody>
         </Card>
 

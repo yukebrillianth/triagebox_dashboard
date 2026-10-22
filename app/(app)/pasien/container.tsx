@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 
 import {
+  ageLabel,
   EmptyState,
   EsiChip,
   PRIORITIES,
@@ -15,7 +16,6 @@ import {
   StaleIndicator,
   VitalCell,
   formatBp,
-  formatConfidence,
   formatRelativeWib,
   genderLabel,
   isStale,
@@ -86,8 +86,8 @@ function VictimRowCells({
       <td className="text-foreground max-w-42 truncate px-3 py-3 text-[0.8125rem]">
         {victim.name?.trim() ? victim.name : 'Belum terdaftar'}
       </td>
-      <td className="text-muted w-11 px-3 py-3 font-mono text-[0.8125rem] tabular-nums">
-        {victim.age == null ? '-' : victim.age}
+      <td className="text-muted w-14 px-3 py-3 font-mono text-[0.8125rem] tabular-nums">
+        {ageLabel(victim.age)}
       </td>
       <td className="text-muted w-20 px-3 py-3 text-[0.8125rem]">
         {genderLabel(victim.gender)}
@@ -144,9 +144,6 @@ function VictimRowCells({
           <PriorityBadge priority={victim.currentPriority} />
           <EsiChip esi={victim.esi} />
         </div>
-      </td>
-      <td className="text-muted w-14 px-3 py-3 text-right font-mono text-xs tabular-nums">
-        {formatConfidence(victim.confidence)}
       </td>
       <td className="px-5 py-3 text-right">
         <span
@@ -441,9 +438,6 @@ export function PasienContainer() {
                     </th>
                     <th className="px-3 py-2.5 font-semibold">Node</th>
                     <th className="px-3 py-2.5 font-semibold">Prioritas</th>
-                    <th className="w-14 px-3 py-2.5 text-right font-semibold">
-                      Conf
-                    </th>
                     <th className="px-5 py-2.5 text-right font-semibold">
                       Update
                     </th>

@@ -24,6 +24,18 @@ test.describe('Detail pasien', () => {
       /^ESI (?:[1-5]|-)$/
     );
 
+    // Confidence is technical provenance, not a clinical certainty (brief
+    // butir 8): closed panel, specific label, no bar in the main card.
+    const technical = page.getByTestId('technical-info');
+    await expect(technical).toBeVisible();
+    // Closed by default: no open attribute until the summary is clicked.
+    await expect(technical).not.toHaveAttribute('open');
+    await technical.locator('summary').click();
+    await expect(technical).toContainText('Skor model (tidak terkalibrasi)');
+
+    // BP is latched, not live (brief butir 5): it carries its own stamp.
+    await expect(page.getByTestId('bp-measured-at')).toBeVisible();
+
     const stamp = `E2E ${Date.now()}`;
     await nameInput.fill(stamp);
 

@@ -36,11 +36,42 @@ const notesField = z
   .optional()
   .nullable();
 
+/** Exactly 16 digits or empty (→ null). Backend validates the same rule. */
+const nikField = z
+  .union([
+    z
+      .string()
+      .trim()
+      .regex(/^\d{16}$/, 'NIK harus tepat 16 digit angka'),
+    z.null(),
+    z.undefined(),
+    z.literal('').transform(() => null),
+  ])
+  .transform((v) => (v === undefined ? null : v))
+  .optional()
+  .nullable();
+
+const optionalTextField = (max: number) =>
+  z
+    .union([z.string().max(max), z.null(), z.undefined()])
+    .transform((v) => {
+      if (v === undefined || v === null) return null;
+      const t = v.trim();
+      return t === '' ? null : t;
+    })
+    .optional()
+    .nullable();
+
 export const registrasiSchema = z.object({
   name: z.string().min(1, 'Nama wajib diisi').max(128),
   age: ageField,
   gender: genderField,
   notes: notesField,
+  nik: nikField,
+  address: optionalTextField(512),
+  familyContactName: optionalTextField(128),
+  familyContactPhone: optionalTextField(32),
+  chiefComplaint: optionalTextField(512),
 });
 
 /** Output after zod (API payload shape). */

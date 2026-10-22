@@ -27,6 +27,11 @@ test.describe('Daftar pasien', () => {
       /^ESI (?:[1-5]|-)$/
     );
 
+    // Confidence is not a clinical certainty (brief butir 8): no column here.
+    await expect(page.getByRole('columnheader', { name: 'Conf' })).toHaveCount(
+      0
+    );
+
     await page.getByTestId('filter-search').fill('zzzz-no-match-xyz');
     await expect(page.getByTestId('empty-state')).toBeVisible({
       timeout: 5_000,

@@ -1,7 +1,10 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Offline banner', () => {
-  test('emulate offline → banner-offline visible', async ({ page, context }) => {
+  test('emulate offline → banner-offline visible', async ({
+    page,
+    context,
+  }) => {
     await page.goto('/');
     await expect(page.getByTestId('page-home')).toBeVisible({
       timeout: 20_000,

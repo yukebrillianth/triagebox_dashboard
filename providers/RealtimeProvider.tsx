@@ -10,10 +10,9 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import toast from 'react-hot-toast';
 
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
-
-import toast from 'react-hot-toast';
 
 import { queryKeys } from '@/hooks/use-api';
 import { api } from '@/lib/api';
@@ -309,7 +308,13 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         lastUpdate: payload.ts,
         currentNodeId: payload.nodeId,
         currentPriority: payload.priority as VictimRow['currentPriority'],
+        // hrSource is `HrSource | null` but the patch type wants `?: X | null`;
+        // undefined here would keep the previous value, so normalize to null.
+        hrSource: payload.hrSource ?? null,
       };
+      if (payload.bpMeasuredAt !== undefined) {
+        patch.bpMeasuredAt = payload.bpMeasuredAt ?? null;
+      }
       // age/gender are NOT patched here on purpose: they are victim columns, so
       // `vital.updated` does not carry them and the `victim.updated` snapshot
       // that follows every reading does. Patching them from this event would

@@ -530,7 +530,9 @@ export function PerangkatContainer() {
                     <tr className="text-muted text-[0.6875rem] font-semibold tracking-[0.08em] uppercase">
                       <th className="px-5 py-2.5 font-semibold">ID</th>
                       <th className="px-3 py-2.5 font-semibold">Nama</th>
+                      <th className="px-3 py-2.5 font-semibold">Pos</th>
                       <th className="px-3 py-2.5 font-semibold">Status</th>
+                      <th className="px-3 py-2.5 font-semibold">Poll</th>
                       <th className="px-3 py-2.5 font-semibold">IP</th>
                       <th className="px-3 py-2.5 font-semibold">Firmware</th>
                       <th className="px-3 py-2.5 font-semibold">Last Seen</th>
@@ -561,8 +563,23 @@ export function PerangkatContainer() {
                         <td className="text-foreground max-w-40 truncate px-3 py-3 text-[0.8125rem]">
                           {s.name}
                         </td>
+                        {/* Post identity (brief butir 9), optional until the
+                            backend ships the fields. */}
+                        <td className="text-muted max-w-40 truncate px-3 py-3 text-[0.8125rem]">
+                          {s.postName ?? '-'}
+                          {s.locationLabel ? (
+                            <span className="text-dim block text-xs">
+                              {s.locationLabel}
+                            </span>
+                          ) : null}
+                        </td>
                         <td className="px-3 py-3">
                           <StatusPill status={s.status} />
+                        </td>
+                        <td className="text-muted px-3 py-3 font-mono text-xs tabular-nums">
+                          {s.pollPeriodSec != null
+                            ? `${s.pollPeriodSec}s`
+                            : '-'}
                         </td>
                         <td className="text-muted px-3 py-3 font-mono text-xs tabular-nums">
                           {s.ipAddress ?? '-'}
@@ -671,7 +688,10 @@ export function PerangkatContainer() {
                         Bat
                       </th>
                       <th className="px-3 py-2.5 font-semibold">Firmware</th>
-                      <th className="px-3 py-2.5 text-right font-semibold">
+                      <th
+                        className="px-3 py-2.5 text-right font-semibold"
+                        title="Paket diterima / diharapkan, dan persen loss"
+                      >
                         Packets
                       </th>
                       <th className="px-3 py-2.5 font-semibold">Last Seen</th>
@@ -724,8 +744,24 @@ export function PerangkatContainer() {
                         <td className="text-muted px-3 py-3 font-mono text-xs">
                           {n.firmware ?? '-'}
                         </td>
+                        {/* received/expected + loss% (brief butir 9/10): the
+                            article needs packet-loss numbers per node. */}
                         <td className="text-muted px-3 py-3 text-right font-mono text-xs tabular-nums">
-                          {n.packetCount ?? 0}
+                          {n.expectedPackets != null
+                            ? `${n.packetCount ?? 0}/${n.expectedPackets}`
+                            : (n.packetCount ?? 0)}
+                          {n.packetLossPct != null ? (
+                            <span
+                              className={cn(
+                                'ml-1.5',
+                                n.packetLossPct > 5
+                                  ? 'text-triage-yellow'
+                                  : 'text-dim'
+                              )}
+                            >
+                              {n.packetLossPct}%
+                            </span>
+                          ) : null}
                         </td>
                         <td className="text-muted px-3 py-3 font-mono text-xs tabular-nums">
                           {formatRelativeWib(n.lastSeen, now)}

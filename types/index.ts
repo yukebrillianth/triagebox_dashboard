@@ -5,6 +5,11 @@ export type Priority = 'RED' | 'YELLOW' | 'GREEN' | 'BLACK';
  *  fabricated 'U'. 'U' reaches a victim only through the operator's PATCH. */
 export type Gender = 'M' | 'F' | 'U';
 export type OnlineStatus = 'ONLINE' | 'OFFLINE';
+/** Patient flow. Non-ACTIVE victims leave the active list and KPIs — the
+ *  backend filters, the dashboard only renders what arrives. */
+export type VictimStatus = 'ACTIVE' | 'REFERRED' | 'DISCHARGED' | 'DECEASED';
+/** Where the HR number came from: the ECG leads, the PPG fallback, or unknown. */
+export type HrSource = 'ECG' | 'PPG';
 
 export type PriorityCounts = {
   RED: number;
@@ -24,6 +29,33 @@ export type Victim = {
   age: number | null;
   gender: Gender | null;
   notes: string | null;
+  // --- Identity fields (brief butir 6). All optional; filled via dashboard
+  // PATCH, never over LoRa. New fields are `?` until the backend ships them.
+  /** Full 16-digit NIK — ONLY on GET /api/victims/:id. Lists carry nikMasked. */
+  nik?: string | null;
+  /** e.g. "3578********0001". Present on list and detail. */
+  nikMasked?: string | null;
+  address?: string | null;
+  familyContactName?: string | null;
+  familyContactPhone?: string | null;
+  chiefComplaint?: string | null;
+  status?: VictimStatus;
+  referredAt?: string | null;
+  referralDestination?: string | null;
+  statusChangedBy?: string | null;
+  /** When the BP value last changed/was measured — BP is latched, HR/SpO2 are
+   *  live, so BP renders with its own timestamp (brief butir 5). */
+  bpMeasuredAt?: string | null;
+  /** Undefined until the backend wires it; render only when present. */
+  hrSource?: HrSource | null;
+  /** Last operator decision: it is NOT overwritten by later device readings. */
+  operatorOverride?: {
+    priority: Priority;
+    reason: string;
+    at: string;
+  } | null;
+  /** True when the last device reading's category differs from the override. */
+  deviceDiffersFromOperator?: boolean;
   /** `Priority?` in schema.prisma:72 — a victim row exists before any verdict
    *  does, so every consumer must handle null. */
   currentPriority: Priority | null;
@@ -78,6 +110,12 @@ export type Station = {
   firmware: string | null;
   ipAddress: string | null;
   notes: string | null;
+  /** Health-post identity (brief butir 9). Optional until backend ships. */
+  postName?: string | null;
+  locationLabel?: string | null;
+  nodeCapacity?: number;
+  /** Station's configured poll period in seconds, from its configuration. */
+  pollPeriodSec?: number;
   /** Sent by the backend, shown nowhere: the broker a station connects to is
    *  the backend's own `MQTT_URL`, so these two never described anything the
    *  operator could change. Do not put them back on a form. */
@@ -99,6 +137,9 @@ export type Node = {
   battery: number | null;
   firmware: string | null;
   packetCount: number | null;
+  /** Link-quality extras (brief butir 9/10). Optional until backend ships. */
+  expectedPackets?: number | null;
+  packetLossPct?: number | null;
   lastSeen: string | null;
   currentVictimId: string | null;
   isActive: boolean;
@@ -130,6 +171,13 @@ export type Activity = {
 };
 
 export type Settings = Record<string, string>;
+
+/** Read-only timing block inside GET /api/settings (brief butir 4). */
+export type TimingSettings = {
+  pollPeriodSec?: number;
+  nodeOfflineSec?: number;
+  linkStaleSec?: number;
+};
 
 export type Health = {
   status: string;
@@ -184,6 +232,10 @@ export type VitalReading = {
    *  The device collapses ESI 3/4/5 into GREEN, so this is the only field that
    *  keeps a walking-wounded 5 apart from a could-deteriorate 3. */
   esi?: number | null;
+  /** BP is latched between measurements; when it last changed (butir 5). */
+  bpMeasuredAt?: string | null;
+  /** Which lead produced HR, once the node reports it (butir 13). */
+  hrSource?: HrSource | null;
   reasons?: string[];
   deviceTs?: string | null;
   /** `receivedAt` in schema.prisma — there is no createdAt column. */
@@ -201,6 +253,9 @@ export type TriageHistory = {
   /** ESI in force at the transition, when the model scored it. */
   esi?: number | null;
   createdAt: string;
+  /** 'OPERATOR' entries carry `reason`; device transitions do not. */
+  source?: 'OPERATOR' | 'DEVICE' | string | null;
+  reason?: string | null;
   [key: string]: unknown;
 };
 
@@ -211,6 +266,21 @@ export type UpdateVictimInput = {
   age?: number | null;
   gender?: Gender | null;
   notes?: string | null;
+  /** Identity fields (brief butir 6). nik is validated: exactly 16 digits. */
+  nik?: string | null;
+  address?: string | null;
+  familyContactName?: string | null;
+  familyContactPhone?: string | null;
+  chiefComplaint?: string | null;
+  /** Status flow (brief butir 7). Backend stamps referredAt/statusChangedBy. */
+  status?: VictimStatus;
+  referralDestination?: string | null;
+};
+
+/** POST /api/victims/:id/override — the only path to BLACK. */
+export type OverrideVictimInput = {
+  priority: Priority;
+  reason: string;
 };
 
 /**
@@ -249,6 +319,7 @@ export type ListVictimsParams = {
   search?: string;
   priority?: Priority;
   nodeId?: string;
+  status?: VictimStatus;
   sort?: string;
 };
 
@@ -300,6 +371,10 @@ export type WsVitalUpdated = {
   priority: Priority | string;
   /** null when the model did not score — never 0, which is not an ESI class. */
   esi?: number | null;
+  /** BP is latched between measurements; this is when it last changed. */
+  bpMeasuredAt?: string | null;
+  /** Present once the node reports which lead produced the HR. */
+  hrSource?: HrSource | null;
   ts: string;
 };
 
